@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="660" viewBox="0 0 1000 660" font-family="Segoe UI, Arial, sans-serif" font-size="13">
+  <rect width="1000" height="660" fill="#ffffff"/>
+  <text x="40" y="38" font-size="20" font-weight="600" fill="#1c2330">Smart charge switch: wiring</text>
+  <text x="40" y="60" fill="#5b6575">Red = 5 V power. Blue = CC signal wire. Grey = control. Black = ground.</text>
+
+  <!-- ground rail -->
+  <path d="M170 520 H830" stroke="#1c2330" stroke-width="3" fill="none"/>
+  <!-- 5 V rail through Q1 -->
+  <path d="M170 180 H455 M545 180 H830" stroke="#d92d20" stroke-width="4" fill="none"/>
+  <!-- D1 feed to U1 -->
+  <path d="M250 180 V225 M250 255 V270 H430 V280" stroke="#d92d20" stroke-width="2.5" fill="none"/>
+  <!-- Q2 control -->
+  <path d="M500 205 V225 M500 255 V280" stroke="#7a8494" stroke-width="2.5" fill="none"/>
+  <!-- charger CC sense -->
+  <path d="M170 300 H230 M290 300 H340 V325 H400 M170 350 H230 M290 350 H340 V325" stroke="#2563eb" stroke-width="2.5" fill="none"/>
+  <!-- phone CC resistors -->
+  <path d="M600 300 H650 M710 300 H770 M600 330 H650 M710 330 H770 M600 360 H650 M710 360 H770 M600 390 H650 M710 390 H770 M770 300 V390 M770 345 H830" stroke="#2563eb" stroke-width="2.5" fill="none"/>
+  <!-- LED and U1 ground -->
+  <path d="M450 410 V450 M450 476 V520 M520 410 V520" stroke="#1c2330" stroke-width="2" fill="none"/>
+  <circle cx="250" cy="180" r="4" fill="#d92d20"/><circle cx="340" cy="325" r="4" fill="#2563eb"/><circle cx="770" cy="345" r="4" fill="#2563eb"/>
+  <circle cx="450" cy="520" r="4" fill="#1c2330"/><circle cx="520" cy="520" r="4" fill="#1c2330"/>
+
+  <g fill="#f4f5f7" stroke="#1c2330" stroke-width="1.5">
+    <rect x="40" y="140" width="130" height="420" rx="10"/>
+    <rect x="830" y="140" width="130" height="420" rx="10"/>
+    <rect x="400" y="280" width="200" height="130" rx="8" fill="#e8f0fe"/>
+    <rect x="455" y="155" width="90" height="50" rx="6" fill="#fde8e6"/>
+    <rect x="470" y="225" width="60" height="30" rx="5"/>
+    <rect x="222" y="225" width="56" height="30" rx="5"/>
+    <rect x="230" y="289" width="60" height="22" rx="4"/>
+    <rect x="230" y="339" width="60" height="22" rx="4"/>
+    <rect x="650" y="289" width="60" height="22" rx="4"/>
+    <rect x="650" y="319" width="60" height="22" rx="4"/>
+    <rect x="650" y="349" width="60" height="22" rx="4"/>
+    <rect x="650" y="379" width="60" height="22" rx="4"/>
+    <rect x="410" y="450" width="80" height="26" rx="5"/>
+  </g>
+
+  <g fill="#1c2330" text-anchor="middle">
+    <text x="105" y="245" font-weight="600">J1</text>
+    <text x="105" y="263">USB-C socket</text>
+    <text x="105" y="281">board</text>
+    <text x="105" y="440" fill="#5b6575">from the</text>
+    <text x="105" y="458" fill="#5b6575">charger</text>
+    <text x="895" y="245" font-weight="600">J2</text>
+    <text x="895" y="263">cut USB-C</text>
+    <text x="895" y="281">cable</text>
+    <text x="895" y="440" fill="#5b6575">to the</text>
+    <text x="895" y="458" fill="#5b6575">phone</text>
+    <text x="500" y="338" font-weight="600">U1</text>
+    <text x="500" y="356">XIAO ESP32-C3</text>
+    <text x="500" y="374" fill="#5b6575">Wi-Fi controller</text>
+    <text x="500" y="176" font-weight="600">Q1</text>
+    <text x="500" y="194" font-size="12">power switch</text>
+    <text x="500" y="245" font-size="12">Q2</text>
+    <text x="250" y="245" font-size="12">D1</text>
+    <text x="260" y="305" font-size="12">R7 100k</text>
+    <text x="260" y="355" font-size="12">R8 100k</text>
+    <text x="680" y="305" font-size="12">R3 33k</text>
+    <text x="680" y="335" font-size="12">R4 12k</text>
+    <text x="680" y="365" font-size="12">R5 4.7k</text>
+    <text x="680" y="395" font-size="12">R6 100k</text>
+    <text x="450" y="468" font-size="12">R9 + LED</text>
+  </g>
+
+  <g fill="#1c2330" font-size="12">
+    <text x="162" y="175" text-anchor="end">VBUS</text>
+    <text x="162" y="304" text-anchor="end">CC1</text>
+    <text x="162" y="354" text-anchor="end">CC2</text>
+    <text x="162" y="524" text-anchor="end">GND</text>
+    <text x="838" y="175">VBUS</text>
+    <text x="838" y="349">CC</text>
+    <text x="838" y="524">GND</text>
+    <text x="436" y="298">5V</text>
+    <text x="506" y="298">D10</text>
+    <text x="406" y="329">D1</text>
+    <text x="594" y="304" text-anchor="end">D3</text>
+    <text x="594" y="334" text-anchor="end">D4</text>
+    <text x="594" y="364" text-anchor="end">D5</text>
+    <text x="594" y="394" text-anchor="end">D2</text>
+    <text x="456" y="404">D7</text>
+    <text x="526" y="404">GND</text>
+  </g>
+
+  <g fill="#5b6575" font-size="12">
+    <text x="300" y="170">5 V from the charger</text>
+    <text x="600" y="170">5 V to the phone, only when Q1 is on</text>
+    <text x="190" y="388">how much the charger offers</text>
+    <text x="612" y="272">tell the phone how much it may take</text>
+    <text x="650" y="422">is a phone plugged in?</text>
+    <text x="540" y="244">turns Q1 on</text>
+    <text x="284" y="244">feeds U1</text>
+  </g>
+
+  <text x="40" y="600" fill="#5b6575" font-size="12">Not drawn: R1 (Q1 gate to 5 V), R2 (Q2 gate to ground), R10 (1 k from the phone's 5 V to ground), C1 and C2 (100 nF at D1 and D2), C3 (10 uF across the charger's 5 V). See DESIGN.md.</text>
+  <text x="40" y="620" fill="#5b6575" font-size="12">J1 carries its own two 5.1 k resistors, which make the charger switch its 5 V on.</text>
+</svg>

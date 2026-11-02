@@ -1,0 +1,12 @@
+# Signing key and its by-products: never public
+*.keystore
+*.idsig
+
+# Build output
+firmware/smart_socket/build/
+firmware/smart_socket/secrets.h
+app-android/build/
+*.apk
+*.exe
+__pycache__/
+*.kicad_prl

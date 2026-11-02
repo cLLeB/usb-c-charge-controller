@@ -1,0 +1,48 @@
+** Drc report for smartsocket.kicad_pcb **
+** Created on 2026-10-16T14:09:18 **
+** Report includes: Errors, Warnings, Exclusions **
+
+** Found 8 DRC violations **
+[lib_footprint_mismatch]: Footprint 'LED_D5.0mm' does not match copy in library 'LED_THT'
+    Local override; warning
+    @(141.7300 mm, 100.5000 mm): Footprint LED1
+[lib_footprint_mismatch]: Footprint 'DIP-14_W7.62mm' does not match copy in library 'Package_DIP'
+    Local override; warning
+    @(131.0400 mm, 98.8700 mm): Footprint U1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(110.0500 mm, 84.3800 mm): Segment of J1 on F.Silkscreen
+    @(109.2200 mm, 100.6000 mm): PTH pad 1 [/CC2_IN] of R8
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(110.0500 mm, 84.3800 mm): Segment of J1 on F.Silkscreen
+    @(109.2200 mm, 88.6000 mm): PTH pad 1 [/CC1_IN] of R7
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(143.0000 mm, 100.5000 mm): Arc of LED1 on F.Silkscreen
+    @(143.7000 mm, 98.0200 mm): PTH pad 2 [/LED_A] of R9
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(143.0000 mm, 100.5000 mm): Circle of LED1 on F.Silkscreen
+    @(143.7000 mm, 98.0200 mm): PTH pad 2 [/LED_A] of R9
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(148.1700 mm, 89.5400 mm): Segment of R10 on B.Silkscreen
+    @(149.0000 mm, 90.6000 mm): PTH pad 2 [/CC_PHONE] of J2
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(148.1700 mm, 89.5400 mm): Segment of R10 on B.Silkscreen
+    @(149.0000 mm, 95.2000 mm): PTH pad 3 [GND] of J2
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** Ignored checks **
+    - Footprint has no courtyard defined
+    - Track endpoint not centered on via
+    - Tuning profile track geometries
+    - Footprint doesn't match symbol's footprint filters
+    - Footprint component type doesn't match footprint pads
+
+** End of Report **

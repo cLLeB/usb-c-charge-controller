@@ -1,0 +1,351 @@
+<title>Smart Socket Assembly</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-screen viewer. 3D bench on the left (top on phones), a reference sheet beside it. */
+:root {
+  --bg: #e9edf0;        /* bench grey, slightly cool */
+  --panel: #f7f9fa;
+  --ink: #17221d;
+  --muted: #56645d;
+  --line: #cfd8d4;
+  --board: #1f6f53;     /* solder-mask green: the accent */
+  --power: #c2412d;     /* 5 V wire red */
+  --chip: #e2ebe6;
+  --warn-bg: #fbeee6;
+  --warn-ink: #7a2c17;
+  --scene: #dde3e6;
+  --font-display: "Archivo", "Segoe UI", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121816; --panel: #19211e; --ink: #e4ece8; --muted: #9db0a7; --line: #2c3833;
+    --board: #4fb38c; --power: #ef7a62; --chip: #22302a; --warn-bg: #3a2119; --warn-ink: #f3b8a6;
+    --scene: #1b2421; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121816; --panel: #19211e; --ink: #e4ece8; --muted: #9db0a7; --line: #2c3833;
+  --board: #4fb38c; --power: #ef7a62; --chip: #22302a; --warn-bg: #3a2119; --warn-ink: #f3b8a6;
+  --scene: #1b2421; color-scheme: dark;
+}
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body); }
+.app { height: 100%; display: flex; }
+.stage { position: relative; flex: 1 1 auto; min-width: 0; }
+#view { position: absolute; inset: 0; }
+#view canvas { display: block; width: 100%; height: 100%; }
+.tools { position: absolute; top: 12px; left: max(12px, env(safe-area-inset-left, 0px)); right: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.tools button {
+  font: 500 13px/1 var(--font-body); padding: 8px 11px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+}
+.tools button[aria-pressed="true"] { background: var(--board); border-color: var(--board); color: var(--panel); }
+.tools button:focus-visible { outline: 2px solid var(--board); outline-offset: 2px; }
+.hint { position: absolute; bottom: 10px; left: max(12px, env(safe-area-inset-left, 0px)); font-size: 12px; color: var(--muted); }
+#err { position: absolute; inset: 60px 16px auto 16px; padding: 12px; border-radius: 8px; background: var(--warn-bg); color: var(--warn-ink); }
+
+aside {
+  flex: 0 0 380px; overflow-y: auto; background: var(--panel); border-left: 1px solid var(--line);
+  padding-block: 22px 28px; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px;
+}
+h1 { font: 800 24px/1.15 var(--font-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+.sub { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+h2 { font: 700 13px/1.2 var(--font-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--board); margin: 0 0 10px; }
+section { min-width: 0; }
+.ports { display: grid; gap: 8px; margin: 0; }
+.port { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: baseline; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.port:last-child { border-bottom: 0; padding-bottom: 0; }
+.port dt { font: 600 13px/1.3 var(--font-display); }
+.port dd { margin: 0; font-size: 14px; color: var(--ink); }
+.port dd small { display: block; color: var(--muted); font-size: 12.5px; }
+.buy { background: var(--chip); border-radius: 8px; padding: 14px; display: grid; gap: 8px; }
+.buy strong { font: 700 17px/1.25 var(--font-display); }
+.buy ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 12px 14px; font-size: 14px; }
+.warn b { display: block; margin-bottom: 2px; }
+.wires { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.wires th { text-align: left; font: 600 11px/1.2 var(--font-body); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 0 6px 6px 0; }
+.wires td { padding: 6px 6px 6px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.wires td:first-child { white-space: nowrap; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; border: 1px solid var(--line); }
+.mono { font-family: var(--font-mono); font-size: 13px; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+
+@media (max-width: 760px) {
+  .app { flex-direction: column; height: auto; min-height: 100%; }
+  .stage { flex: 0 0 auto; height: 58vh; min-height: 320px; }
+  aside { flex: 0 0 auto; overflow: visible; border-left: 0; border-top: 1px solid var(--line); }
+  html, body { height: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .tools button { transition: none; } }
+</style>
+
+<div class="app">
+  <div class="stage">
+    <div id="view" aria-label="3D model of the smart socket"></div>
+    <div class="tools" role="toolbar" aria-label="View">
+      <button id="bClosed" aria-pressed="true">Closed case</button>
+      <button id="bOpen" aria-pressed="false">Lid off</button>
+      <button id="bBoard" aria-pressed="false">Board only</button>
+      <button id="bLabels" aria-pressed="true">Labels</button>
+      <button id="bSpin" aria-pressed="false">Spin</button>
+      <button id="bReset" aria-pressed="false">Reset view</button>
+    </div>
+    <div class="hint">Drag to turn · scroll or pinch to zoom · right-drag to move</div>
+    <div id="err" hidden>The 3D view needs an internet connection the first time, to load its drawing library.</div>
+  </div>
+
+  <aside>
+    <header>
+      <h1>Smart socket, board rev 0.2</h1>
+      <p class="sub">Drawn to scale from the circuit board file: a 51.2 × 24 mm board in a case of about 55 × 28 × 16.5 mm, roughly a matchbox. Turn it over to see the parts underneath.</p>
+    </header>
+
+    <section>
+      <h2>What plugs in where</h2>
+      <dl class="ports">
+        <div class="port"><dt>Charger</dt><dd>USB-C socket, left end<small>Your normal USB-C charger and its USB-C cable plug in here.</small></dd></div>
+        <div class="port"><dt>Phone</dt><dd>Cable out of the right end<small>The cut cable is soldered inside; its plug goes into the phone.</small></dd></div>
+        <div class="port"><dt>Updates</dt><dd>Over Wi-Fi, from the app<small>The XIAO's own USB port is closed in for a dust-tight case; for a backup update over USB, take the lid off.</small></dd></div>
+        <div class="port"><dt>Light</dt><dd>Red LED, through the lid<small>On: charging. Slow blink: paused. Fast blink: Wi-Fi setup.</small></dd></div>
+        <div class="port"><dt>Button</dt><dd>Press the ring on the lid, back corner<small>Press once: charge to 100 % this time. Hold 5 s: forget Wi-Fi.</small></dd></div>
+      </dl>
+    </section>
+
+    <section>
+      <h2>The cable to buy</h2>
+      <div class="buy">
+        <strong>One USB-C to USB-C cable</strong>
+        <ul>
+          <li>Both ends USB-C. A cheap, plain charging cable is ideal.</li>
+          <li>"USB 2.0", rated 3 A (often sold as "60 W"). Not USB 3.x, USB4, Thunderbolt, 100 W, 240 W or 5 A: those have many thin wires and a chip in the plug.</li>
+          <li>Any length: you cut it about 25 cm from one plug and keep that plug end.</li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="warn"><b>Not a USB-A to USB-C cable</b>That kind has no CC wire, and its plug has a resistor built in that would fight the socket's own signalling. Both ends must be USB-C.</div>
+
+    <section>
+      <h2>Wires inside the cut cable</h2>
+      <div style="overflow-x:auto">
+        <table class="wires">
+          <thead><tr><th>Wire</th><th>Goes to</th></tr></thead>
+          <tbody>
+            <tr><td><span class="swatch" style="background:#d6372a"></span>Red</td><td>Pad <span class="mono">+5V</span></td></tr>
+            <tr><td><span class="swatch" style="background:#1d1d1d"></span>Black</td><td>Pad <span class="mono">GND</span> (the bare braid too)</td></tr>
+            <tr><td><span class="swatch" style="background:#e3b622"></span>CC</td><td>Pad <span class="mono">CC</span>. Colour varies (often yellow, blue or white)</td></tr>
+            <tr><td><span class="swatch" style="background:#f2f2f2"></span><span class="swatch" style="background:#2f9a4b"></span>Data</td><td>Not used: cut short and cover with tape</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="note">Colours are not standard, so test each wire: plug the cable into the USB-C socket board (IDX 48), set the meter to beep, and touch a wire end and the board's VBUS, GND, CC1/CC2 and D+/D− pads. Every working USB-C to USB-C cable has VBUS, GND and CC.</p>
+    <p class="note">If your phone has a Lightning port instead of USB-C, say so before buying: this design needs a USB-C phone end.</p>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  if (!window.THREE || !THREE.OrbitControls) { document.getElementById('err').hidden = false; return; }
+  const host = document.getElementById('view');
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(36, 1, 1, 3000);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  host.appendChild(renderer.domElement);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  const HOME = { pos: [-30, 90, 120], target: [26, 0, 18] };
+  function resetView() { camera.position.set(...HOME.pos); controls.target.set(...HOME.target); controls.update(); }
+  resetView();
+
+  function paintBg() { scene.background = new THREE.Color(css('--scene') || '#dde3e6'); }
+  paintBg();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintBg);
+  new MutationObserver(paintBg).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8f9a94, 0.9));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.7); sun.position.set(-60, 160, 110); scene.add(sun);
+
+  // Millimetres. x = along the board (0 = LED end), z = across (0 = back edge, 24 = front), y = up (0 = board top).
+  const M = (color, extra) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.6, metalness: 0.05 }, extra || {}));
+  const METAL = { roughness: 0.3, metalness: 0.85 };
+  const G = () => new THREE.Group();
+  const board = G(), caseBase = G(), lid = G(), cables = G(), world = G(), labels = G();
+  scene.add(board, caseBase, lid, cables, world, labels);
+
+  function box(g, x0, x1, y0, y1, z0, z1, m) {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), m);
+    mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); g.add(mesh); return mesh;
+  }
+  function cyl(g, x, y, z, r, len, axis, m, seg) {
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg || 24), m);
+    if (axis === 'x') mesh.rotation.z = Math.PI / 2;
+    if (axis === 'z') mesh.rotation.x = Math.PI / 2;
+    mesh.position.set(x, y, z); g.add(mesh); return mesh;
+  }
+  function tube(g, pts, r, m) {
+    const c = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p)));
+    const mesh = new THREE.Mesh(new THREE.TubeGeometry(c, 80, r, 12), m); g.add(mesh); return mesh;
+  }
+  function label(text, x, y, z) {
+    const c = document.createElement('canvas'), ctx = c.getContext('2d');
+    ctx.font = '600 40px Archivo, Segoe UI, Arial';
+    const w = Math.ceil(ctx.measureText(text).width) + 32; c.width = w; c.height = 62;
+    ctx.fillStyle = 'rgba(255,255,255,0.94)'; ctx.strokeStyle = '#1f6f53'; ctx.lineWidth = 3;
+    ctx.fillRect(2, 2, w - 4, 58); ctx.strokeRect(2, 2, w - 4, 58);
+    ctx.font = '600 40px Archivo, Segoe UI, Arial'; ctx.fillStyle = '#17221d'; ctx.textBaseline = 'middle'; ctx.fillText(text, 16, 33);
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false }));
+    s.scale.set(w / 18, 62 / 18, 1); s.position.set(x, y, z); s.renderOrder = 10; labels.add(s);
+  }
+
+  const BLACK = M(0x18191b), DARK = M(0x26282c), STEEL = M(0xc9ccd1, METAL), GOLD = M(0xcfa94a, METAL);
+
+  // ---- board (rev 0.2, positions from the circuit board file) ----
+  box(board, 0, 51.2, -1.6, 0, 0, 24, M(0x1f6f53, { roughness: 0.5 }));
+  box(board, 12.45, 42.4, 0.01, 0.05, 0.8, 2.55, M(0x2f8a68));     // 5 V input copper
+  box(board, 34.3, 50.5, 0.01, 0.05, 6.4, 9.3, M(0x2f8a68));       // phone 5 V copper
+
+  // J1: Adafruit USB-C socket board on its 8-pin header, socket out of the LEFT end
+  box(board, 10.18, 12.68, 0, 2.5, 1.84, 22.16, BLACK);
+  box(board, 0, 13.97, 2.5, 4.1, 1.84, 22.16, M(0x23409a));
+  box(board, -0.6, 7.4, 4.1, 7.3, 7.53, 16.47, STEEL);
+  box(board, -0.7, -0.6, 4.8, 6.6, 8.6, 15.4, BLACK);
+
+  // U1: XIAO ESP32-C3, crosswise, USB port at the front edge
+  box(board, 14.55, 17.05, 0, 2.5, 2.4, 20.1, BLACK);
+  box(board, 29.79, 32.29, 0, 2.5, 2.4, 20.1, BLACK);
+  box(board, 14.52, 32.32, 2.5, 3.5, 0.75, 21.75, M(0x16181c));
+  box(board, 18.4, 28.4, 3.5, 5.6, 5.0, 15.0, STEEL);
+  box(board, 18.95, 27.9, 3.5, 6.7, 19.5, 23.25, STEEL);
+  box(board, 19.8, 27.0, 4.2, 6.0, 23.2, 23.3, BLACK);
+  box(board, 28.6, 30.4, 3.5, 4.4, 1.2, 2.8, M(0xdadde2));     // BOOT button, D6 corner
+  box(board, 16.4, 18.2, 3.5, 4.4, 1.2, 2.8, M(0xdadde2));     // RESET button
+  box(board, 23.6, 25.8, 3.5, 4.6, 1.0, 3.2, GOLD);            // antenna socket
+  tube(board, [[24.7, 4.7, 2.0], [24, 7, 3], [20, 7.6, 5], [12, 7.8, 6]], 0.35, DARK);
+  box(board, 2, 12, 7.6, 7.9, 4, 18, M(0xb98a3a));             // flexible antenna, stuck under the lid
+
+  // Q1 power transistor (the one small part), C3, Q2, C1, C2 standing, LED standing
+  box(board, 34.55, 39.45, 0, 1.6, 3.45, 7.35, BLACK);
+  for (const x of [35.10, 36.37, 37.64, 38.91]) { box(board, x - 0.22, x + 0.22, 0, 0.3, 2.4, 3.45, STEEL); box(board, x - 0.22, x + 0.22, 0, 0.3, 7.35, 8.4, STEEL); }
+  const discMat = M(0xd8862f);
+  function discCap(x, y, z, alongX) {
+    const c = new THREE.Mesh(new THREE.SphereGeometry(2.35, 18, 12), discMat);
+    c.scale.set(alongX ? 1 : 0.28, 1, alongX ? 0.28 : 1); c.position.set(x, y, z); board.add(c);
+  }
+  discCap(43.5, 4.2, 2.4, true);
+  discCap(33.9, 4.2, 19.1, false);
+  discCap(36.9, 4.2, 19.1, false);
+  cyl(board, 35.74, 4.4, 13.0, 2.3, 4.6, 'y', BLACK);
+  const ledMat = M(0xe0271b, { transparent: true, opacity: 0.9, emissive: 0x8a0e07 });
+  cyl(board, 43.0, 5.4, 20.5, 2.5, 6.4, 'y', ledMat);
+  cyl(board, 43.0, 2.4, 20.5, 2.9, 0.9, 'y', M(0xc7231a));
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(2.5, 20, 14), ledMat); dome.position.set(43.0, 8.6, 20.5); board.add(dome);
+
+  // Underside: resistors and the diode lying flat (below the board)
+  const under = (x0, x1, z, color) => cyl(board, (x0 + x1) / 2, -2.9, z, 1.25, 6.3, 'x', M(color));
+  const underZ = (x, z0, z1, color) => cyl(board, x, -2.9, (z0 + z1) / 2, 1.25, 6.3, 'z', M(color));
+  for (const z of [8.6, 20.6]) under(1.6, 9.22, z, 0x5f86c8);                     // R7, R8 under J1
+  for (const z of [4.4, 7.5, 10.6, 13.7, 16.8]) under(19.0, 26.62, z, 0x5f86c8);  // R5, R4, R3, R6, R2 under U1
+  cyl(board, 23.08, -2.95, 20.05, 1.35, 5.2, 'x', BLACK);                         // D1 under U1
+  cyl(board, 25.2, -2.95, 20.05, 1.4, 0.8, 'x', M(0xdcdcdc));
+  underZ(40.6, 4.9, 12.52, 0x5f86c8); underZ(43.7, 10.4, 18.02, 0x5f86c8); underZ(46.8, 9.0, 16.62, 0x5f86c8);
+
+  // ---- phone cable: three wires from the pads, out of the RIGHT end ----
+  const wireCol = [[6.0, 0xd6372a], [10.6, 0xe3b622], [15.2, 0x1d1d1d]];
+  for (const [z, c] of wireCol) tube(cables, [[49.0, 0.4, z], [49.6, 1.6, z], [51.2, 2.2, (z + 10.6) / 2], [53.4, 2.4, 10.6]], 0.55, M(c));
+  const cableMat = M(0x2b2e33, { roughness: 0.75 });
+  tube(cables, [[53.0, 2.4, 10.6], [62, 2.2, 10.6], [78, 0, 18], [94, -3, 34], [104, -4.5, 46]], 1.9, cableMat);
+  const plugA = G();
+  box(plugA, -6.5, 6.5, -3.2, 3.2, -5.2, 5.2, cableMat);
+  box(plugA, 6.5, 13, -1.25, 1.25, -4.1, 4.1, STEEL);
+  plugA.position.set(108, -4.5, 50); plugA.rotation.y = -0.9; cables.add(plugA);
+  const phone = G();
+  box(phone, 0, 150, -4, 4, -36, 36, M(0x2d3138, { roughness: 0.4 }));
+  box(phone, 6, 144, 4, 4.2, -33, 33, M(0x0e1013, { roughness: 0.2 }));
+  box(phone, -0.3, 0.2, -1.4, 1.4, -4.4, 4.4, BLACK);
+  phone.position.set(114, -4.5, 58); phone.rotation.y = -0.9; world.add(phone);
+
+  // ---- charger side: USB-C cable from a wall charger into the LEFT end ----
+  const plugB = G();
+  box(plugB, -13, 0, -3.2, 3.2, -5.2, 5.2, M(0xeeeeee, { roughness: 0.5 }));
+  box(plugB, 0, 6.5, -1.25, 1.25, -4.1, 4.1, STEEL);
+  plugB.position.set(-7.1, 5.7, 12); cables.add(plugB);
+  tube(cables, [[-20, 5.7, 12], [-36, 5, 12], [-54, 0, 4], [-70, -2, -8], [-84, -2, -20]], 1.9, M(0xeeeeee, { roughness: 0.6 }));
+  const brick = G();
+  box(brick, -34, 0, -12, 22, -16, 16, M(0xf2f2f0, { roughness: 0.55 }));
+  box(brick, -0.2, 0.2, 3.8, 6.8, -4.4, 4.4, BLACK);
+  brick.position.set(-86, -4, -26); brick.rotation.y = 0.5; world.add(brick);
+
+  // ---- case (see-through), from case/case.scad ----
+  const glass = (o) => M(0x9fb4c6, { transparent: true, opacity: o, roughness: 0.35, depthWrite: false });
+  const X0 = -1.6, X1 = 53.2, Z0 = -2.0, Z1 = 26.0, FLOOR = -8.2, TOP = 8.2, T = 1.6;
+  const wallM = glass(0.26);
+  box(caseBase, X0, X1, FLOOR, FLOOR + T, Z0, Z1, wallM);
+  box(caseBase, X0, X1, FLOOR + T, TOP, Z0, Z0 + T, wallM);
+  box(caseBase, X0, X1, FLOOR + T, TOP, Z1 - T, Z1, wallM);
+  box(caseBase, X0, X0 + T, FLOOR + T, TOP, Z0 + T, Z1 - T, wallM);
+  box(caseBase, X1 - T, X1, FLOOR + T, TOP, Z0 + T, Z1 - T, wallM);
+  const edge = new THREE.LineBasicMaterial({ color: 0x40566a });
+  function outline(g, pts) {
+    const geo = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(...p)));
+    g.add(new THREE.LineLoop(geo, edge));
+  }
+  outline(caseBase, [[X0 - 0.05, 4.0, 7.4], [X0 - 0.05, 7.4, 7.4], [X0 - 0.05, 7.4, 16.6], [X0 - 0.05, 4.0, 16.6]]);      // socket-shaped opening, flush
+  // strain-relief collar around the cable, no open slot
+  cyl(caseBase, X1 + 2.5, 2.6, 10.6, 3.2, 5, 'x', M(0x8fa3b6, { transparent: true, opacity: 0.55 }));
+  box(lid, X0, X1, TOP, TOP + T, Z0, Z1, glass(0.36));
+  const ringM = new THREE.MeshBasicMaterial({ color: 0x40566a, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(2.7, 3.1, 32), ringM);
+  ring.rotation.x = -Math.PI / 2; ring.position.set(43.0, TOP + T + 0.05, 20.5); lid.add(ring);
+  const press = new THREE.Mesh(new THREE.RingGeometry(3.3, 3.7, 32), ringM);   // press here: thin lid over the button, no hole
+  press.rotation.x = -Math.PI / 2; press.position.set(29.5, TOP + T + 0.05, 2.0); lid.add(press);
+
+  // ---- labels ----
+  label('Charger plugs in here', -16, 20, 0);
+  label('to the wall charger', -70, 16, -12);
+  label('Phone cable (cut USB-C cable)', 76, 12, 30);
+  label('Phone', 150, 10, 76);
+  label('Light, through the lid', 43, 20, 26);
+  label('Press here: button (no hole)', 29.5, 22, -4);
+  label('Closed: updates go over Wi-Fi', 23.4, 16, 38);
+  label('Wi-Fi controller', 23.4, 26, 10);
+  label('Power switch', 37, 14, 0);
+  label('Parts under the board', 23, -14, 12);
+
+  // ---- view modes ----
+  const btn = id => document.getElementById(id);
+  function mode(m) {
+    caseBase.visible = m !== 'board';
+    lid.visible = m === 'closed';
+    btn('bClosed').setAttribute('aria-pressed', m === 'closed');
+    btn('bOpen').setAttribute('aria-pressed', m === 'open');
+    btn('bBoard').setAttribute('aria-pressed', m === 'board');
+  }
+  mode('closed');
+  btn('bClosed').onclick = () => mode('closed');
+  btn('bOpen').onclick = () => mode('open');
+  btn('bBoard').onclick = () => mode('board');
+  btn('bLabels').onclick = () => { labels.visible = !labels.visible; btn('bLabels').setAttribute('aria-pressed', labels.visible); };
+  btn('bSpin').onclick = () => { controls.autoRotate = !controls.autoRotate; btn('bSpin').setAttribute('aria-pressed', controls.autoRotate); };
+  btn('bReset').onclick = resetView;
+
+  function size() {
+    const w = host.clientWidth, h = host.clientHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / Math.max(h, 1); camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(size).observe(host); size();
+  (function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+})();
+</script>
