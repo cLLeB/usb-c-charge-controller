@@ -10,3 +10,9 @@ app-android/build/
 *.exe
 __pycache__/
 *.kicad_prl
+
+# Google Play upload certificate, made for an upload key reset
+upload_certificate.pem
+*.aab
+app-android/bundle/
+app-android/bundletool.jar

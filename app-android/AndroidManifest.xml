@@ -4,7 +4,7 @@
     android:versionCode="17"
     android:versionName="1.7">
 
-    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34" />
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36" />
 
     <!-- Talking to the sockets on the home Wi-Fi, and finding them -->
     <uses-permission android:name="android.permission.INTERNET" />

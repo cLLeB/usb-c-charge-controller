@@ -1,0 +1,33 @@
+# Builds Smart Socket's Google Play bundle, signed with the upload key kept in the repository's secrets,
+# and keeps it as a download of the run, to upload in the Play Console.
+name: Play bundle
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+      - name: bundletool, Google's tool for making bundles
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download -R google/bundletool --pattern 'bundletool-all-*.jar' -O app-android/bundletool.jar
+      - name: Build and sign
+        env:
+          UPLOAD_KEYSTORE_B64: ${{ secrets.PLAY_UPLOAD_KEYSTORE_B64 }}
+          UPLOAD_PASSWORD: ${{ secrets.PLAY_UPLOAD_PASSWORD }}
+        run: |
+          if [ -z "$UPLOAD_KEYSTORE_B64" ]; then echo "The upload key is missing from the repository secrets." >&2; exit 1; fi
+          echo "$UPLOAD_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          UPLOAD_KEYSTORE="$RUNNER_TEMP/upload.jks" bash app-android/build-bundle.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SmartSocket-play-bundle
+          path: app-android/SmartSocket.aab

@@ -55,6 +55,20 @@ final class Ui {
         col.setOrientation(LinearLayout.VERTICAL);
         col.setPadding(dp(16), dp(20), dp(16), dp(28));
         sv.addView(col);
+        // From Android 15 the page is drawn under the status bar and the navigation bar: it keeps its
+        // content clear of them (and of a camera cutout) by padding itself by the room they take.
+        final int left = col.getPaddingLeft(), top = col.getPaddingTop(), right = col.getPaddingRight(), bottom = col.getPaddingBottom();
+        sv.setOnApplyWindowInsetsListener((v, insets) -> {
+            int l, t, r, b;
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                android.graphics.Insets bars = insets.getInsets(android.view.WindowInsets.Type.systemBars() | android.view.WindowInsets.Type.displayCutout());
+                l = bars.left; t = bars.top; r = bars.right; b = bars.bottom;
+            } else {
+                l = insets.getSystemWindowInsetLeft(); t = insets.getSystemWindowInsetTop(); r = insets.getSystemWindowInsetRight(); b = insets.getSystemWindowInsetBottom();
+            }
+            col.setPadding(left + l, top + t, right + r, bottom + b);
+            return insets;
+        });
         TextView h = text(title, 26, ink, true);
         h.setPadding(0, dp(4), 0, dp(14));
         col.addView(h);
