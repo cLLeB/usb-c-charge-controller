@@ -42,7 +42,10 @@ final class Link {
     private static final int WIFI_TIMEOUT_MS = 2000;      // a socket on the same network answers in well under a second
     private static final long WIFI_RECHECK_MS = 20000;    // while on Bluetooth, look whether Wi-Fi works again this often
 
+    private static boolean watchingNetworks;
+
     static Link get(Context c, String id) {
+        watchNetworks(c.getApplicationContext());
         synchronized (all) {
             Link l = all.get(id);
             if (l == null) {
@@ -50,6 +53,36 @@ final class Link {
                 all.put(id, l);
             }
             return l;
+        }
+    }
+
+    /**
+     * When the phone moves to another network (home Wi-Fi, a hotspot, mobile data), every socket goes back to
+     * trying Wi-Fi first. Without this a link that had fallen back to Bluetooth could stay there after both
+     * ended up on the same Wi-Fi.
+     */
+    private static void watchNetworks(Context app) {
+        synchronized (all) {
+            if (watchingNetworks) return;
+            watchingNetworks = true;
+        }
+        try {
+            android.net.ConnectivityManager cm = app.getSystemService(android.net.ConnectivityManager.class);
+            cm.registerDefaultNetworkCallback(new android.net.ConnectivityManager.NetworkCallback() {
+                @Override public void onAvailable(android.net.Network n) { Api.MAIN.post(Link::networkChanged); }
+                @Override public void onLost(android.net.Network n) { Api.MAIN.post(Link::networkChanged); }
+            });
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static void networkChanged() {
+        synchronized (all) {
+            for (Link l : all.values()) {
+                l.via = null;
+                l.checkingWifi = false;
+                l.lastWifiCheck = -WIFI_RECHECK_MS;
+            }
         }
     }
 
@@ -99,7 +132,8 @@ final class Link {
     /** While Bluetooth is in use, ask now and then whether the socket answers on Wi-Fi again. */
     private void recheckWifi(Store.Socket s) {
         long now = SystemClock.elapsedRealtime();
-        if (checkingWifi || now - lastWifiCheck < WIFI_RECHECK_MS) return;
+        // a check still "running" when the next one is due is dead (the network changed under it): it no longer blocks
+        if (now - lastWifiCheck < WIFI_RECHECK_MS) return;
         checkingWifi = true;
         lastWifiCheck = now;
         String base = s.base;
