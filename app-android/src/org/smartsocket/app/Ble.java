@@ -100,11 +100,17 @@ final class Ble {
         if (a == null || !c.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) return "this device has no Bluetooth";
         if (!permitted(c)) return "Bluetooth is not allowed for this app";
         if (!a.isEnabled()) return "Bluetooth is off";
-        if (Build.VERSION.SDK_INT < 31 && Build.VERSION.SDK_INT >= 28) {
-            LocationManager lm = (LocationManager) c.getSystemService(Context.LOCATION_SERVICE);
-            if (lm != null && !lm.isLocationEnabled()) return "Location is off (this Android version needs it to find Bluetooth devices)";
-        }
+        if (Build.VERSION.SDK_INT < 31 && !locationOn(c)) return "Location is off (this Android version needs it to find Bluetooth devices)";
         return null;
+    }
+
+    static boolean locationOn(Context c) {
+        if (Build.VERSION.SDK_INT >= 28) {
+            LocationManager lm = (LocationManager) c.getSystemService(Context.LOCATION_SERVICE);
+            return lm == null || lm.isLocationEnabled();
+        }
+        return android.provider.Settings.Secure.getInt(c.getContentResolver(),
+                android.provider.Settings.Secure.LOCATION_MODE, 0) != 0;
     }
 
     // ================================================================== the shared scanner

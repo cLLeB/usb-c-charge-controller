@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Smart USB-C Charge Controller, Explained</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 20mm 17mm; }
+  html, body { background: #fff; color: #000; }
+  body { font-family: Georgia, "Times New Roman", serif; font-size: 10.6pt; line-height: 1.5; margin: 0; }
+  h1, h2, h3, h4 { font-family: "Segoe UI", Arial, sans-serif; color: #000; line-height: 1.2; }
+  h1 { font-size: 20pt; margin: 0 0 6pt; page-break-before: always; border-bottom: 1.5pt solid #000; padding-bottom: 4pt; }
+  h1.first { page-break-before: avoid; }
+  h2 { font-size: 13.5pt; margin: 16pt 0 4pt; }
+  h3 { font-size: 11.5pt; margin: 12pt 0 3pt; }
+  h4 { font-size: 10.6pt; margin: 9pt 0 2pt; }
+  p { margin: 0 0 7pt; text-align: justify; }
+  ul, ol { margin: 0 0 7pt 18pt; padding: 0; }
+  li { margin: 0 0 2.5pt; }
+  .num { font-family: "Segoe UI", Arial, sans-serif; font-weight: 700; }
+  table { border-collapse: collapse; width: 100%; margin: 4pt 0 10pt; font-size: 9.4pt; page-break-inside: avoid; }
+  th, td { border: 0.6pt solid #000; padding: 3pt 5pt; vertical-align: top; text-align: left; }
+  th { font-family: "Segoe UI", Arial, sans-serif; font-weight: 700; border-bottom: 1.2pt solid #000; }
+  figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+  figure svg { max-width: 100%; height: auto; }
+  figure img { max-width: 100%; border: 0.6pt solid #000; }
+  figcaption { font-family: "Segoe UI", Arial, sans-serif; font-size: 8.8pt; margin-top: 4pt; text-align: left; }
+  .box { border: 1pt solid #000; padding: 6pt 9pt; margin: 8pt 0 10pt; page-break-inside: avoid; }
+  .box h4 { margin-top: 0; }
+  .why { border-left: 3pt solid #000; padding: 2pt 0 2pt 9pt; margin: 6pt 0 9pt; }
+  .eq { font-family: "Consolas", "Courier New", monospace; font-size: 9.6pt; display: block; margin: 4pt 0 7pt 14pt; white-space: pre-wrap; }
+  code { font-family: "Consolas", "Courier New", monospace; font-size: 9.2pt; }
+  .cover { text-align: center; padding-top: 70mm; page-break-after: always; }
+  .cover h1 { border: none; font-size: 28pt; page-break-before: avoid; }
+  .cover .sub { font-family: "Segoe UI", Arial, sans-serif; font-size: 13pt; margin-top: 10pt; }
+  .cover .meta { font-family: "Segoe UI", Arial, sans-serif; font-size: 10pt; margin-top: 50mm; line-height: 1.7; }
+  .toc { font-family: "Segoe UI", Arial, sans-serif; font-size: 10pt; columns: 2; column-gap: 18pt; }
+  .toc div { margin: 0 0 3pt; break-inside: avoid; }
+  .two { display: flex; gap: 10pt; }
+  .two > figure { flex: 1; }
+  .small { font-size: 9pt; }
+  .src { font-size: 8.8pt; }
+  .src li { margin-bottom: 3pt; word-break: break-all; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ COVER -->
+<div class="cover">
+  <h1>The Smart USB-C Charge Controller</h1>
+  <div class="sub">Everything explained from the beginning, in plain language:<br>
+  what it is for, why every part is there, why each choice was made,<br>how it was designed, built, programmed, tested and boxed</div>
+  <div class="meta">
+    Project: "Smart socket", board revision 0.2, firmware 1.8<br>
+    Internship portfolio project, JUNIA, Lille, October to November 2026<br>
+    Author of the build: Caleb Kwabena Kyere Boateng<br>
+    Explanatory document written November 2026
+  </div>
+</div>
+
+<!-- ============================================================ CONTENTS -->
+<h1 class="first">How to read this document</h1>
+<p>This document assumes <b>no prior knowledge of electronics or programming</b>. Every idea is introduced the first time it is needed, in everyday language first and then with the exact technical words, so that by the end you can explain the whole project to anyone, including an engineer or an interviewer. Wherever a decision was made, a box marked with a black bar on the left explains <b>why</b> that option was chosen and what the alternatives were.</p>
+<p>The real measurements from the build (the numbers read on the multimeter in the lab, the readings the socket reported, the tablet's charging current) are quoted throughout, so that the theory always connects to what actually happened on the bench.</p>
+<p>Diagrams are drawn in black and white. Photographs are of the actual board and parts.</p>
+
+<h2>Contents</h2>
+<div class="toc">
+  <div>1. The problem: why limit charging at all</div>
+  <div>2. What the smart socket does, in one picture</div>
+  <div>3. Electricity in ten minutes (the basics you need)</div>
+  <div>4. The components, one family at a time</div>
+  <div>5. How USB-C really works</div>
+  <div>6. The data wires and "slow charging"</div>
+  <div>7. The circuit, part by part, with every reason</div>
+  <div>8. All the calculations in one place</div>
+  <div>9. From idea to circuit board</div>
+  <div>10. Ordering the boards</div>
+  <div>11. Assembly: soldering, step by step</div>
+  <div>12. Testing the finished board</div>
+  <div>13. The program inside the controller</div>
+  <div>14. Wi-Fi, Bluetooth and talking to the socket</div>
+  <div>15. Updating the program without a cable</div>
+  <div>16. The phone app and the laptop app</div>
+  <div>17. Problems met and how they were solved</div>
+  <div>18. The case: design, material, printing</div>
+  <div>19. Safety, limits and what version 2 would add</div>
+  <div>20. Glossary</div>
+  <div>21. Sources</div>
+</div>
+
+<!-- ============================================================ 1 -->
+<h1>1. The problem: why limit charging at all</h1>
+
+<h2>1.1 What is inside a phone battery</h2>
+<p>Almost every phone, tablet, earbud and power bank uses a <b>lithium-ion battery</b>. Inside it, charging pushes lithium atoms from one side of the cell to the other, and using the phone lets them flow back. The "fuller" the battery, the higher its <b>voltage</b> (the electrical "pressure" it holds, explained in chapter 3). An empty cell sits at about 3.0 to 3.5 volts; a completely full one at about 4.2 volts.</p>
+<p>The higher that voltage, and the hotter the cell, the faster the chemistry inside slowly wears out. Each full cycle from empty to 100 % costs a little capacity; sitting at 100 % for hours (for example charging all night) costs more.</p>
+
+<h2>1.2 What the research says</h2>
+<p>Battery University, a widely used reference run by the battery maker Cadex, gives this rule of thumb for lithium-ion cells: the lower the voltage a cell is charged to, the more charge cycles it survives. Charging to the full 4.20 V gives roughly 300 to 500 cycles; stopping at 4.10 V gives about 600 to 1000; stopping at 4.00 V gives about 1200 to 2000. In other words, <b>every 0.1 V less roughly doubles the battery's life</b>. Stopping at about 80 % keeps the cell near 4.0 V, which is where the familiar "keep it between 20 and 80 %" advice comes from. Heat makes things worse, which is why the socket also has a temperature cut-out (chapter 13).</p>
+
+<figure>
+<svg viewBox="0 0 640 230" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="12">
+  <line x1="60" y1="190" x2="610" y2="190" stroke="#000"/>
+  <line x1="60" y1="190" x2="60" y2="20" stroke="#000"/>
+  <text x="335" y="222" text-anchor="middle">Voltage the cell is charged to (higher = fuller)</text>
+  <text x="18" y="105" transform="rotate(-90 18 105)" text-anchor="middle">Cycles it survives</text>
+  <rect x="100" y="150" width="70" height="40" fill="#000"/><text x="135" y="208" text-anchor="middle">4.20 V</text><text x="135" y="144" text-anchor="middle">300-500</text>
+  <rect x="220" y="120" width="70" height="70" fill="#666"/><text x="255" y="208" text-anchor="middle">4.10 V</text><text x="255" y="114" text-anchor="middle">600-1000</text>
+  <rect x="340" y="75" width="70" height="115" fill="#999"/><text x="375" y="208" text-anchor="middle">4.00 V</text><text x="375" y="69" text-anchor="middle">1200-2000</text>
+  <rect x="460" y="30" width="70" height="160" fill="#ccc" stroke="#000"/><text x="495" y="208" text-anchor="middle">3.90 V</text><text x="495" y="24" text-anchor="middle">2400-4000</text>
+  <text x="560" y="120" font-size="11">about 80 %</text><text x="560" y="134" font-size="11">charge ~4.0 V</text>
+</svg>
+<figcaption>Figure 1.1. Cycle life against the voltage a lithium-ion cell is charged to (values from Battery University, article BU-808). Charging only to around 80 % keeps the cell near 4.0 V.</figcaption>
+</figure>
+
+<h2>1.3 Why build a separate device</h2>
+<p>Many recent phones already offer an "80 % limit" setting. But not every device does (older phones, many tablets, earbuds, power banks), the setting usually cannot be scheduled or controlled from another room, and it cannot be told "charge only during off-peak hours" or "stop after 45 minutes". The smart socket adds those abilities to <b>any</b> USB-C device, and it is also a complete engineering exercise: electronics, a custom circuit board, a program, wireless communication, two apps and a 3D-printed case.</p>
+
+<div class="why"><b>Why switch the 5 V side and not the mains plug?</b> A smart mains plug switches 230 V, which can kill and must follow strict safety rules and certification. The USB side of a charger carries only 5 V, which is completely safe to touch. Everything in this project stays at 5 V or below, so it can be designed, hand-soldered and tested by a student with ordinary tools. Switching the 5 V also lets the socket do things a mains plug cannot, such as telling the phone how much current it may draw.</div>
+
+<!-- ============================================================ 2 -->
+<h1>2. What the smart socket does, in one picture</h1>
+<p>The smart socket is a small box, about the size of a matchbox, that sits <b>between a USB-C charger and the device being charged</b>. The charger plugs into one end; a short USB-C cable comes out of the other end and plugs into the phone or tablet.</p>
+
+<figure>
+<svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="12">
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#000"/></marker></defs>
+  <rect x="10" y="110" width="110" height="70" fill="none" stroke="#000" stroke-width="1.5"/><text x="65" y="140" text-anchor="middle" font-weight="700">USB-C</text><text x="65" y="156" text-anchor="middle" font-weight="700">charger</text><text x="65" y="198" text-anchor="middle" font-size="10">plugged into the wall</text>
+  <line x1="120" y1="145" x2="190" y2="145" stroke="#000" stroke-width="2" marker-end="url(#a)"/><text x="155" y="137" text-anchor="middle" font-size="10">5 V</text>
+  <rect x="190" y="60" width="300" height="170" fill="none" stroke="#000" stroke-width="2"/><text x="340" y="52" text-anchor="middle" font-weight="700">THE SMART SOCKET</text>
+  <rect x="200" y="120" width="70" height="50" fill="none" stroke="#000"/><text x="235" y="141" text-anchor="middle" font-size="10">input</text><text x="235" y="155" text-anchor="middle" font-size="10">socket J1</text>
+  <rect x="300" y="120" width="70" height="50" fill="none" stroke="#000"/><text x="335" y="141" text-anchor="middle" font-size="10">electronic</text><text x="335" y="155" text-anchor="middle" font-size="10">switch Q1</text>
+  <rect x="400" y="120" width="80" height="50" fill="none" stroke="#000"/><text x="440" y="141" text-anchor="middle" font-size="10">output</text><text x="440" y="155" text-anchor="middle" font-size="10">cable J2</text>
+  <line x1="270" y1="145" x2="300" y2="145" stroke="#000" stroke-width="2"/><line x1="370" y1="145" x2="400" y2="145" stroke="#000" stroke-width="2"/>
+  <rect x="290" y="72" width="90" height="34" fill="#eee" stroke="#000"/><text x="335" y="87" text-anchor="middle" font-size="10" font-weight="700">"brain" U1</text><text x="335" y="100" text-anchor="middle" font-size="9">XIAO ESP32-C3</text>
+  <line x1="335" y1="106" x2="335" y2="120" stroke="#000" stroke-dasharray="3,2"/><text x="350" y="116" font-size="9">on / off</text>
+  <rect x="290" y="185" width="90" height="30" fill="none" stroke="#000"/><text x="335" y="204" text-anchor="middle" font-size="10">light (LED)</text>
+  <line x1="480" y1="145" x2="555" y2="145" stroke="#000" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="555" y="95" width="60" height="105" rx="8" fill="none" stroke="#000" stroke-width="1.5"/><text x="585" y="142" text-anchor="middle" font-weight="700">phone</text><text x="585" y="158" text-anchor="middle" font-size="10">or tablet</text>
+  <path d="M585,95 C565,72 450,70 384,86" fill="none" stroke="#000" stroke-dasharray="5,3" marker-end="url(#a)"/>
+  <text x="590" y="30" text-anchor="middle" font-size="10">"my battery is at 79 %"</text><text x="590" y="43" text-anchor="middle" font-size="10">sent over Wi-Fi or Bluetooth</text>
+  <rect x="190" y="250" width="300" height="40" fill="none" stroke="#000" stroke-dasharray="4,3"/><text x="340" y="267" text-anchor="middle" font-size="10">laptop app, phone app or web page: settings,</text><text x="340" y="281" text-anchor="middle" font-size="10">limits, timer, history, updates (remote control)</text>
+</svg>
+<figcaption>Figure 2.1. The whole system. Power flows left to right through an electronic switch. The phone reports its battery level; the "brain" decides whether the switch is on or off.</figcaption>
+</figure>
+
+<h2>2.1 The idea in five sentences</h2>
+<ol>
+  <li>Power from the charger enters the box and passes through an <b>electronic switch</b> on its way to the phone.</li>
+  <li>A tiny computer (the <b>microcontroller</b>, nicknamed "the brain") controls that switch.</li>
+  <li>The phone runs a small app that tells the brain its <b>battery percentage</b> every minute, over Wi-Fi or Bluetooth.</li>
+  <li>When the battery reaches the <b>upper limit</b> (for example 80 %), the brain opens the switch; when it falls to the <b>lower limit</b> (for example 40 %), it closes it again.</li>
+  <li>To the phone, opening the switch looks exactly like pulling the plug out, and closing it looks like plugging it back in, so <b>every phone already knows how to handle it</b>: nothing on the phone has to be modified.</li>
+</ol>
+
+<h2>2.2 The full list of features</h2>
+<table>
+<tr><th>Feature</th><th>What it means for the user</th></tr>
+<tr><td>Upper and lower battery limits</td><td>Stop at, say, 80 %, start again at 40 %.</td></tr>
+<tr><td>Modes: "use limits", "always", "never"</td><td>Normal smart behaviour, a plain charger, or completely off.</td></tr>
+<tr><td>"Charge to 100 % once"</td><td>For a trip: ignores the limit until the battery is full, then returns to normal.</td></tr>
+<tr><td>Charge timer</td><td>For devices that cannot report their battery (earbuds): stop after N minutes.</td></tr>
+<tr><td>Charging hours</td><td>Charge only between two times of day, for example cheap night-time electricity.</td></tr>
+<tr><td>Current limit: 0.5 A, 1.5 A or 3 A</td><td>Gentle slow charging or the fastest the charger allows.</td></tr>
+<tr><td>Heat cut-out</td><td>Pauses if the controller gets above 75 °C, resumes below 65 °C.</td></tr>
+<tr><td>History</td><td>The last 20 charging sessions: when, how long, battery at start and end, why it stopped.</td></tr>
+<tr><td>Name, PIN, "find me"</td><td>Several sockets on one network, each named; a PIN keeps others out; the light flashes on request.</td></tr>
+<tr><td>Wi-Fi and Bluetooth</td><td>Controlled from anywhere on the home network, or nearby over Bluetooth on networks that block devices.</td></tr>
+<tr><td>Wireless updates</td><td>New program versions load over Wi-Fi or Bluetooth; the box never needs opening.</td></tr>
+<tr><td>Self-recovery</td><td>If the program ever freezes, it restarts itself within a minute.</td></tr>
+</table>
+
+<h2>2.3 What it deliberately does not do</h2>
+<ul>
+  <li><b>No laptop charging.</b> Laptops need 20 V, negotiated digitally through a protocol called USB Power Delivery (chapter 5). Passing that through safely needs a dedicated chip and higher-voltage parts: a "version 2" job.</li>
+  <li><b>No fast charging above 15 W.</b> Fast charging also raises the voltage above 5 V. The socket stays at 5 V, up to 3 A (5 V × 3 A = 15 W).</li>
+  <li><b>No data.</b> The socket passes power only. A phone charging through it cannot transfer files to a computer.</li>
+</ul>
+
+<!-- ============================================================ 3 -->
+<h1>3. Electricity in ten minutes</h1>
+<p>Five ideas explain almost everything in this project. The easiest way to picture them is <b>water in pipes</b>.</p>
+
+<figure>
+<svg viewBox="0 0 660 200" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="11">
+  <rect x="20" y="30" width="80" height="120" fill="none" stroke="#000" stroke-width="1.5"/>
+  <rect x="22" y="60" width="76" height="88" fill="#ccc"/><text x="60" y="22" text-anchor="middle" font-weight="700">tank</text><text x="60" y="170" text-anchor="middle">height of water</text><text x="60" y="184" text-anchor="middle">= VOLTAGE (V)</text>
+  <path d="M100,130 L250,130" stroke="#000" stroke-width="12" fill="none"/><path d="M100,130 L250,130" stroke="#fff" stroke-width="8" fill="none"/>
+  <text x="175" y="118" text-anchor="middle">water flowing = CURRENT (A)</text>
+  <path d="M250,130 L330,130" stroke="#000" stroke-width="6" fill="none"/><text x="290" y="155" text-anchor="middle">narrow pipe</text><text x="290" y="169" text-anchor="middle">= RESISTANCE (Ω)</text>
+  <path d="M330,130 L420,130" stroke="#000" stroke-width="12" fill="none"/><path d="M330,130 L420,130" stroke="#fff" stroke-width="8" fill="none"/>
+  <rect x="420" y="112" width="40" height="36" fill="none" stroke="#000" stroke-width="1.5"/><line x1="420" y1="112" x2="460" y2="148" stroke="#000"/><text x="440" y="100" text-anchor="middle">tap</text><text x="440" y="170" text-anchor="middle">= SWITCH</text><text x="440" y="184" text-anchor="middle">(transistor)</text>
+  <path d="M460,130 L560,130" stroke="#000" stroke-width="12" fill="none"/><path d="M460,130 L560,130" stroke="#fff" stroke-width="8" fill="none"/>
+  <circle cx="600" cy="130" r="30" fill="none" stroke="#000" stroke-width="1.5"/><path d="M585,130 L615,130 M600,115 L600,145 M590,120 L610,140 M610,120 L590,140" stroke="#000"/><text x="600" y="90" text-anchor="middle">water wheel</text><text x="600" y="180" text-anchor="middle">= the phone doing work</text><text x="600" y="194" text-anchor="middle">(POWER, W)</text>
+</svg>
+<figcaption>Figure 3.1. The water analogy. Voltage is pressure, current is flow, resistance is a narrow pipe, a switch is a tap, power is the work done.</figcaption>
+</figure>
+
+<h2>3.1 Voltage (volts, V)</h2>
+<p>Voltage is the <b>electrical pressure</b> that pushes charge through a wire, like the height of water in a tank. A USB charger provides 5 V. The brain of the socket works internally at 3.3 V. A phone battery is about 3.7 V. Voltage is always measured <b>between two points</b>; in a circuit one point is chosen as the zero reference and called <b>ground (GND)</b>.</p>
+
+<h2>3.2 Current (amperes, A)</h2>
+<p>Current is <b>how much charge flows per second</b>, like litres per second in a pipe. A phone charging slowly takes about 0.5 A; fast charging at 5 V can take 3 A. Small signals inside the socket are measured in milliamperes (mA, thousandths of an ampere).</p>
+
+<h2>3.3 Resistance (ohms, Ω) and Ohm's law</h2>
+<p>Resistance is how hard it is for current to flow, like a narrow section of pipe. A <b>resistor</b> is a component made to have a precise resistance. The three quantities are tied together by <b>Ohm's law</b>, the single most useful equation in electronics:</p>
+<span class="eq">Voltage = Current × Resistance        V = I × R
+so  Current = Voltage ÷ Resistance    I = V ÷ R</span>
+<p>Example from this project: the 1 kΩ resistor R10 sits across the 5 V output. Current through it = 5 V ÷ 1000 Ω = 0.005 A = 5 mA. On the bench, measuring J2 +5V to GND with the power off read <b>0.999 kΩ</b>, which proved R10 was correctly soldered and nothing else was short-circuited.</p>
+
+<h2>3.4 Power (watts, W)</h2>
+<p>Power is <b>how fast energy is used</b>: voltage times current. A phone taking 3 A at 5 V uses 5 × 3 = 15 W. Power also tells us how hot a part gets: any part that has voltage across it while current flows through it turns that power into heat. That is why the switch transistor (Q1) was chosen to have a very low resistance (chapter 7).</p>
+<span class="eq">Power = Voltage × Current       P = V × I
+      = Current² × Resistance  P = I² × R</span>
+
+<h2>3.5 The voltage divider</h2>
+<p>Two resistors in a row between a voltage and ground split that voltage in a fixed proportion. This simple trick is used many times in the socket: to signal current limits to the phone, to read what the charger offers, and to detect whether a phone is plugged in.</p>
+<figure>
+<svg viewBox="0 0 520 190" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="11">
+  <line x1="120" y1="20" x2="120" y2="45" stroke="#000"/><text x="120" y="14" text-anchor="middle">V in (e.g. 3.3 V)</text>
+  <rect x="110" y="45" width="20" height="40" fill="none" stroke="#000"/><text x="140" y="70">R top</text>
+  <line x1="120" y1="85" x2="120" y2="110" stroke="#000"/><circle cx="120" cy="97" r="3"/><line x1="120" y1="97" x2="200" y2="97" stroke="#000"/><text x="205" y="101">V out</text>
+  <rect x="110" y="110" width="20" height="40" fill="none" stroke="#000"/><text x="140" y="135">R bottom</text>
+  <line x1="120" y1="150" x2="120" y2="170" stroke="#000"/><line x1="105" y1="170" x2="135" y2="170" stroke="#000"/><line x1="110" y1="175" x2="130" y2="175" stroke="#000"/><line x1="115" y1="180" x2="125" y2="180" stroke="#000"/><text x="145" y="178">ground</text>
+  <text x="270" y="70" font-family="Consolas" font-size="12">V out = V in × R bottom</text>
+  <text x="270" y="90" font-family="Consolas" font-size="12">         ─────────────────</text>
+  <text x="270" y="110" font-family="Consolas" font-size="12">         R top + R bottom</text>
+  <text x="270" y="145">Example: 3.3 V, R top 33 kΩ, R bottom 5.1 kΩ</text>
+  <text x="270" y="162">V out = 3.3 × 5.1 / 38.1 = 0.44 V</text>
+</svg>
+<figcaption>Figure 3.2. A voltage divider. The example is exactly how the socket tells a phone "basic current only" (chapter 5).</figcaption>
+</figure>
+
+<h2>3.6 Direct current and digital signals</h2>
+<p>Everything here is <b>DC</b> (direct current: the voltage stays the same polarity, unlike the 230 V AC in the wall). The brain's pins are <b>digital</b>: each pin is either "high" (3.3 V, meaning 1 or ON) or "low" (0 V, meaning 0 or OFF). A pin can also be an <b>analog input</b>, which measures a voltage between 0 and about 3 V and turns it into a number; the socket uses two of those.</p>
+
+<!-- ============================================================ 4 -->
+<h1>4. The components, one family at a time</h1>
+<p>Before looking at the circuit, here is what each <b>kind</b> of part does, with the symbol used to draw it. The exact parts chosen, and why, are in chapter 7.</p>
+
+<figure>
+<svg viewBox="0 0 680 270" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="11">
+  <!-- resistor -->
+  <line x1="10" y1="40" x2="40" y2="40" stroke="#000"/><path d="M40,40 l5,-8 l10,16 l10,-16 l10,16 l10,-16 l10,16 l5,-8" fill="none" stroke="#000"/><line x1="100" y1="40" x2="130" y2="40" stroke="#000"/>
+  <text x="70" y="75" text-anchor="middle" font-weight="700">Resistor</text><text x="70" y="90" text-anchor="middle">limits current</text>
+  <!-- capacitor -->
+  <line x1="170" y1="40" x2="215" y2="40" stroke="#000"/><line x1="215" y1="22" x2="215" y2="58" stroke="#000" stroke-width="2"/><line x1="227" y1="22" x2="227" y2="58" stroke="#000" stroke-width="2"/><line x1="227" y1="40" x2="270" y2="40" stroke="#000"/>
+  <text x="221" y="75" text-anchor="middle" font-weight="700">Capacitor</text><text x="221" y="90" text-anchor="middle">small charge store,</text><text x="221" y="104" text-anchor="middle">smooths voltage</text>
+  <!-- diode -->
+  <line x1="310" y1="40" x2="345" y2="40" stroke="#000"/><path d="M345,25 L345,55 L375,40 z" fill="#000"/><line x1="375" y1="25" x2="375" y2="55" stroke="#000" stroke-width="2"/><line x1="375" y1="40" x2="410" y2="40" stroke="#000"/>
+  <text x="360" y="75" text-anchor="middle" font-weight="700">Diode</text><text x="360" y="90" text-anchor="middle">one-way valve</text><text x="360" y="104" text-anchor="middle">(stripe = exit side)</text>
+  <!-- LED -->
+  <line x1="450" y1="40" x2="480" y2="40" stroke="#000"/><path d="M480,25 L480,55 L510,40 z" fill="none" stroke="#000"/><line x1="510" y1="25" x2="510" y2="55" stroke="#000" stroke-width="2"/><line x1="510" y1="40" x2="540" y2="40" stroke="#000"/><path d="M500,20 l10,-12 M510,22 l10,-12" stroke="#000"/>
+  <text x="495" y="75" text-anchor="middle" font-weight="700">LED</text><text x="495" y="90" text-anchor="middle">diode that lights up</text>
+  <!-- mosfet n -->
+  <line x1="40" y1="190" x2="70" y2="190" stroke="#000"/><line x1="70" y1="170" x2="70" y2="210" stroke="#000" stroke-width="2"/><line x1="78" y1="165" x2="78" y2="215" stroke="#000" stroke-width="2"/>
+  <line x1="78" y1="172" x2="105" y2="172" stroke="#000"/><line x1="105" y1="172" x2="105" y2="150" stroke="#000"/><line x1="78" y1="208" x2="105" y2="208" stroke="#000"/><line x1="105" y1="208" x2="105" y2="230" stroke="#000"/>
+  <text x="112" y="155">drain</text><text x="112" y="232">source</text><text x="20" y="194">gate</text>
+  <text x="80" y="255" text-anchor="middle" font-weight="700">MOSFET transistor</text><text x="80" y="268" text-anchor="middle">voltage-controlled switch</text>
+  <!-- micro -->
+  <rect x="230" y="150" width="100" height="80" fill="none" stroke="#000" stroke-width="1.5"/><text x="280" y="185" text-anchor="middle" font-weight="700">micro-</text><text x="280" y="200" text-anchor="middle" font-weight="700">controller</text>
+  <path d="M230,165 h-12 M230,180 h-12 M230,195 h-12 M230,210 h-12 M330,165 h12 M330,180 h12 M330,195 h12 M330,210 h12" stroke="#000"/>
+  <text x="280" y="255" text-anchor="middle">a whole computer on one chip</text>
+  <!-- ground -->
+  <line x1="430" y1="150" x2="430" y2="180" stroke="#000"/><line x1="410" y1="180" x2="450" y2="180" stroke="#000"/><line x1="417" y1="187" x2="443" y2="187" stroke="#000"/><line x1="424" y1="194" x2="436" y2="194" stroke="#000"/>
+  <text x="430" y="225" text-anchor="middle" font-weight="700">Ground (0 V)</text>
+  <!-- connector -->
+  <rect x="540" y="160" width="60" height="40" rx="10" fill="none" stroke="#000" stroke-width="1.5"/><rect x="552" y="172" width="36" height="16" rx="6" fill="none" stroke="#000"/>
+  <text x="570" y="225" text-anchor="middle" font-weight="700">USB-C</text><text x="570" y="238" text-anchor="middle">socket / plug</text>
+</svg>
+<figcaption>Figure 4.1. The symbols used in this document's circuit drawings.</figcaption>
+</figure>
+
+<h2>4.1 Resistors</h2>
+<p>A resistor is a small component with a fixed resistance, marked with coloured bands. Through-hole (leaded) resistors have wire legs that go through holes in the board; surface-mount ones are tiny rectangles soldered on top. The socket uses only leaded resistors so that every part can be hand-soldered without a microscope. They do three jobs here: <b>set a default state</b> (a "pull-up" or "pull-down" holds a signal high or low when nothing else drives it), <b>form voltage dividers</b>, and <b>limit current</b> (the LED's resistor).</p>
+<p>The colour bands read as digits and a multiplier. The 330 kΩ resistors (R1, R2, R6) are orange-orange-black-orange-brown; the 680 Ω (R9) is blue-grey-black-black-brown; the 1 kΩ (R10) is brown-black-black-brown-brown. During assembly each was checked by its bands before soldering.</p>
+
+<h2>4.2 Capacitors</h2>
+<p>A capacitor stores a tiny amount of charge and releases it instantly. In this project, 100 nF ("nanofarad") ceramic disc capacitors act as <b>shock absorbers</b>: one on the 5 V input steadies the supply when the phone suddenly starts drawing current, and two on the analog inputs smooth the readings so a single electrical spike cannot fool the brain.</p>
+
+<h2>4.3 Diodes and LEDs</h2>
+<p>A diode lets current flow in only one direction, like a non-return valve. The side marked with a stripe is the exit (the <b>cathode</b>). Every diode "costs" a little voltage to pass through, its <b>forward voltage</b>. A <b>Schottky</b> diode is a special type with a lower forward voltage (about 0.3 to 0.45 V instead of 0.6 to 0.7 V for an ordinary silicon diode), so it wastes less. An <b>LED</b> (light-emitting diode) is a diode that gives off light when current flows; it must always have a resistor in series to limit that current.</p>
+
+<h2>4.4 Transistors: the MOSFET</h2>
+<p>A transistor is an electronic switch with no moving parts. The type used here is the <b>MOSFET</b>. It has three terminals: current flows between the <b>drain</b> and the <b>source</b>, and the voltage on the <b>gate</b> decides whether it may. Almost no current flows into the gate, so a weak signal can control a strong current, the way a small hand on a tap controls a big pipe.</p>
+<p>There are two flavours, which behave as mirror images:</p>
+<ul>
+  <li><b>N-channel</b>: turns ON when the gate is made <b>higher</b> than the source (by about 2 to 3 V or more). Natural for switching the ground side of a load. The socket's small helper transistor Q2 (2N7000) is N-channel.</li>
+  <li><b>P-channel</b>: turns ON when the gate is made <b>lower</b> than the source. Natural for switching the positive supply side of a load ("high-side switching"). The socket's main power switch Q1 (SI4435) is P-channel.</li>
+</ul>
+<p>When ON, a MOSFET behaves like a very small resistor called its <b>on-resistance, R<sub>DS(on)</sub></b>. For a power switch this number must be tiny, because the heat it produces is current² × R<sub>DS(on)</sub>.</p>
+
+<h2>4.5 The microcontroller</h2>
+<p>A microcontroller is <b>a complete small computer on one chip</b>: a processor, memory, storage for its program, and many pins that can be switched on and off or can measure voltages. It runs one program forever, from the moment power arrives. The socket uses an <b>ESP32-C3</b> chip made by Espressif, mounted on a ready-made thumb-sized board called the <b>Seeed Studio XIAO ESP32-C3</b>, which also includes the USB-C programming port, a 3.3 V regulator, the antenna connector and two buttons.</p>
+
+<h2>4.6 The printed circuit board (PCB)</h2>
+<p>A PCB is a thin fibreglass sheet with copper tracks printed on it that connect the parts, replacing a tangle of wires. "Two-layer" means copper on both faces, joined where needed by small plated holes called <b>vias</b>. Holes for leaded parts are <b>plated</b> (lined with copper), so a joint soldered on either face connects both layers. The board is coated in green <b>solder mask</b> (an insulating varnish) and printed with white <b>silkscreen</b> labels showing where each part goes.</p>
+
+<!-- ============================================================ 5 -->
+<h1>5. How USB-C really works</h1>
+<p>The whole design rests on understanding the USB-C connector. A USB-C plug looks simple, but it has 24 contacts and a clever handshake that decides <b>whether</b> power is turned on and <b>how much</b> current is allowed.</p>
+
+<h2>5.1 The wires that matter</h2>
+<table>
+<tr><th>Name</th><th>What it carries</th><th>Used by the socket?</th></tr>
+<tr><td>VBUS</td><td>The power: 5 V (or more with fast charging).</td><td>Yes: switched by Q1.</td></tr>
+<tr><td>GND</td><td>Ground, the return path for the current.</td><td>Yes: passes straight through.</td></tr>
+<tr><td>CC (CC1 and CC2)</td><td>"Configuration Channel": detects that a device is attached, which way up the plug is, and how much current is allowed. Also carries USB Power Delivery messages.</td><td>Yes: this is the key signal.</td></tr>
+<tr><td>D+ and D−</td><td>USB 2.0 data. Also used by older "charger detection" schemes.</td><td>Not for data; joined together (chapter 6).</td></tr>
+<tr><td>TX/RX pairs, SBU</td><td>High-speed USB 3 / video and side-band signals.</td><td>No.</td></tr>
+</table>
+<p>A USB-C plug can go in either way up. That is why the socket has <b>two</b> CC pins (CC1 and CC2): a cable connects only one of them, and which one tells the electronics which way round the plug is.</p>
+
+<h2>5.2 The "cold socket" handshake: Rp and Rd</h2>
+<p>A USB-C charger does <b>not</b> put 5 V on its socket all the time. That would be dangerous if two chargers were plugged into each other. Instead, the socket stays "cold" (0 V) until a real device is detected, using two resistors on the CC wire:</p>
+<ul>
+  <li>The <b>source</b> (the charger) connects CC to its supply through a resistor called <b>Rp</b> ("pull-up").</li>
+  <li>The <b>sink</b> (the phone) connects CC to ground through a resistor called <b>Rd</b> ("pull-down"), always <b>5.1 kΩ</b>.</li>
+</ul>
+<p>Together Rp and Rd form a voltage divider (section 3.5). The charger sees the CC voltage fall into a certain range, knows a genuine sink is attached, and turns on VBUS. The phone, in turn, reads the CC voltage to learn how strong the charger is, because the <b>value of Rp</b> is the charger's way of saying how much current it can give.</p>
+
+<figure>
+<svg viewBox="0 0 660 230" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="11">
+  <rect x="20" y="30" width="200" height="170" fill="none" stroke="#000" stroke-width="1.5"/><text x="120" y="22" text-anchor="middle" font-weight="700">SOURCE (charger)</text>
+  <rect x="440" y="30" width="200" height="170" fill="none" stroke="#000" stroke-width="1.5"/><text x="540" y="22" text-anchor="middle" font-weight="700">SINK (phone)</text>
+  <text x="60" y="65">supply</text><line x1="110" y1="60" x2="150" y2="60" stroke="#000"/><line x1="150" y1="60" x2="150" y2="75" stroke="#000"/>
+  <rect x="140" y="75" width="20" height="40" fill="none" stroke="#000"/><text x="100" y="100">Rp</text>
+  <line x1="150" y1="115" x2="150" y2="130" stroke="#000"/><line x1="150" y1="130" x2="540" y2="130" stroke="#000" stroke-width="2"/><text x="345" y="122" text-anchor="middle" font-weight="700">CC wire in the cable</text>
+  <line x1="540" y1="130" x2="540" y2="140" stroke="#000"/><rect x="530" y="140" width="20" height="40" fill="none" stroke="#000"/><text x="560" y="165">Rd = 5.1 kΩ</text>
+  <line x1="540" y1="180" x2="540" y2="190" stroke="#000"/><line x1="525" y1="190" x2="555" y2="190" stroke="#000"/>
+  <text x="120" y="160" text-anchor="middle">watches CC: if a 5.1 kΩ</text><text x="120" y="174" text-anchor="middle">is there, turns VBUS on</text>
+  <text x="440" y="70" font-size="10">reads the CC voltage:</text><text x="440" y="84" font-size="10">low = basic, middle = 1.5 A,</text><text x="440" y="98" font-size="10">high = 3 A allowed</text>
+  <line x1="220" y1="215" x2="440" y2="215" stroke="#000" stroke-dasharray="4,3"/><text x="330" y="228" text-anchor="middle" font-size="10">VBUS (5 V) only switched on after the handshake</text>
+</svg>
+<figcaption>Figure 5.1. The Rp/Rd handshake on the CC wire. It decides both "is something attached?" and "how much current may it take?"</figcaption>
+</figure>
+
+<h3>The three current levels</h3>
+<p>The USB Type-C specification defines three "advertisements". A charger whose Rp is pulled up to 5 V uses about 56 kΩ for default USB power, 22 kΩ for 1.5 A and 10 kΩ for 3 A. The phone sees one of three voltage windows across its 5.1 kΩ Rd:</p>
+<table>
+<tr><th>Advertisement</th><th>Current allowed at 5 V</th><th>Voltage seen on CC (approx.)</th></tr>
+<tr><td>Default USB power</td><td>0.5 A (USB 2) / 0.9 A (USB 3)</td><td>about 0.25 to 0.61 V</td></tr>
+<tr><td>1.5 A</td><td>1.5 A</td><td>about 0.70 to 1.16 V</td></tr>
+<tr><td>3.0 A</td><td>3 A</td><td>about 1.31 to 2.04 V</td></tr>
+</table>
+
+<h2>5.3 The trick: the socket plays both roles</h2>
+<p>This is the heart of the design. The smart socket sits in the middle, so:</p>
+<ul>
+  <li><b>Towards the charger, it pretends to be a phone.</b> The input board J1 has two built-in 5.1 kΩ Rd resistors, so the charger happily turns on 5 V as soon as it is plugged in.</li>
+  <li><b>Towards the phone, it pretends to be a charger.</b> The brain drives the phone's CC wire through one of three resistors (33 kΩ, 12 kΩ or 4.7 kΩ) from its own 3.3 V pin. That makes the phone see "basic", "1.5 A" or "3 A", whichever the socket chooses.</li>
+</ul>
+<p>Because the two CC wires are <b>separate</b>, the socket is in full control: it reads what the charger offers (through R7 and R8) and decides what to tell the phone, never more than the charger can give and never more than the user's "most current" setting.</p>
+
+<figure>
+<svg viewBox="0 0 680 210" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="11">
+  <rect x="10" y="60" width="110" height="90" fill="none" stroke="#000" stroke-width="1.5"/><text x="65" y="50" text-anchor="middle" font-weight="700">charger</text><text x="65" y="100" text-anchor="middle">Rp (its own)</text>
+  <rect x="190" y="30" width="300" height="150" fill="none" stroke="#000" stroke-width="2"/><text x="340" y="22" text-anchor="middle" font-weight="700">smart socket</text>
+  <rect x="200" y="60" width="100" height="90" fill="none" stroke="#000"/><text x="250" y="90" text-anchor="middle">J1 has Rd</text><text x="250" y="105" text-anchor="middle">5.1 kΩ × 2</text><text x="250" y="125" text-anchor="middle" font-size="10">"I am a phone"</text>
+  <rect x="380" y="60" width="100" height="90" fill="none" stroke="#000"/><text x="430" y="85" text-anchor="middle">brain drives</text><text x="430" y="100" text-anchor="middle">33 k / 12 k / 4.7 k</text><text x="430" y="125" text-anchor="middle" font-size="10">"I am a charger"</text>
+  <line x1="120" y1="105" x2="200" y2="105" stroke="#000" stroke-width="2"/><text x="160" y="97" text-anchor="middle" font-size="10">CC</text>
+  <line x1="480" y1="105" x2="560" y2="105" stroke="#000" stroke-width="2"/><text x="520" y="97" text-anchor="middle" font-size="10">CC</text>
+  <rect x="560" y="60" width="110" height="90" fill="none" stroke="#000" stroke-width="1.5"/><text x="615" y="50" text-anchor="middle" font-weight="700">phone</text><text x="615" y="100" text-anchor="middle">Rd (its own)</text>
+  <line x1="300" y1="105" x2="380" y2="105" stroke="#000" stroke-dasharray="4,3"/><text x="340" y="98" text-anchor="middle" font-size="9">reads offer,</text><text x="340" y="125" text-anchor="middle" font-size="9">decides</text>
+  <text x="340" y="200" text-anchor="middle">The two CC wires are NOT connected: the phone can never negotiate a higher voltage with the charger.</text>
+</svg>
+<figcaption>Figure 5.2. The socket is a "sink" to the charger and a "source" to the phone, with the brain choosing what the phone is told.</figcaption>
+</figure>
+
+<h2>5.4 Why fast charging is impossible here, and why that is a safety feature</h2>
+<p><b>USB Power Delivery (PD)</b> is a digital conversation over the CC wire in which a phone or laptop asks a capable charger for 9 V, 15 V or 20 V. The socket has <b>no PD chip</b>, and its two CC wires are separate, so neither the socket nor the phone can ever ask the charger for more than 5 V. That is important: the socket's parts (and the brain's input) are designed for 5 V. Even the 65 W laptop charger used in testing safely gave plain 5 V through the socket.</p>
+<div class="why"><b>Why not pass PD through and support fast charging?</b> It would need a PD controller chip on each side, parts rated for 20 V, and far more complex firmware, all for a feature that also works against the project's goal (fast charging heats the battery). For version 1 the decision was: 5 V only, up to 15 W, simple and safe.</div>
+
+<!-- ============================================================ 6 -->
+<h1>6. The data wires and "slow charging"</h1>
+<p>One of the most instructive problems in the project came from two wires the design initially ignored: <b>D+ and D−</b> (the white and green wires in the cut cable).</p>
+
+<h2>6.1 How older devices decide how much current to take</h2>
+<p>Before USB-C, chargers had no CC wire. To let a phone know "this is a wall charger, not a computer's USB port", the industry standard <b>USB Battery Charging 1.2 (BC1.2)</b> uses the data wires: a <b>Dedicated Charging Port</b> simply <b>shorts D+ to D−</b> (connects them together, with at most 200 Ω between them). The phone sends a small signal on D+ and checks whether it comes back on D−. If it does, the phone knows it may draw at least 1.5 A. If the data wires are left unconnected, the phone assumes it is on a computer port and limits itself to about <b>0.5 A</b>.</p>
+
+<h2>6.2 What happened in the build</h2>
+<p>Many phones (and especially Samsung tablets) check BC1.2 even on USB-C. With the white and green wires cut and taped separately, the test tablet:</p>
+<ul>
+  <li>reported "<b>USB powered</b>" with a maximum current of 0.5 A, and showed a "slow charger" warning;</li>
+  <li>gained only about <b>0.47 A</b> into its battery with the screen off, and slowly <b>lost</b> charge with the screen on.</li>
+</ul>
+<p>After simply <b>twisting the white and green wires together</b> (no soldering, no new parts):</p>
+<ul>
+  <li>the tablet switched to "<b>AC powered</b>", the warning disappeared;</li>
+  <li>it put about <b>1.0 A</b> into its battery, more than twice as fast, rising from 61 to 62 % within a minute of measuring.</li>
+</ul>
+<div class="why"><b>Why this is safe.</b> Shorting D+ and D− is exactly what every simple wall charger does inside. The other end of these wires goes nowhere (the input board's data pins are not connected), so the joined pair cannot affect the charger, and it cannot request a higher voltage. The one practical warning: some fast-charge schemes (such as Qualcomm Quick Charge) also use D+ and D−, but they need the <b>charger</b> to see those wires, and here the charger never does.</div>
+<p>Later, when the joint came apart inside the closed case, the tablet once again showed "USB powered, 0.5 A" and sat at the same percentage while "charging". That is how this chapter's lesson was confirmed twice.</p>
+
+<!-- ============================================================ 7 -->
+<h1>7. The circuit, part by part, with every reason</h1>
+<p>Here is the complete circuit. Each block is then explained: what it does, why it is needed, and why that particular part was chosen.</p>
+
+<figure>
+<svg viewBox="0 0 700 470" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="10.5">
+  <!-- J1 -->
+  <rect x="10" y="40" width="90" height="150" fill="none" stroke="#000" stroke-width="1.5"/><text x="55" y="32" text-anchor="middle" font-weight="700">J1 input</text><text x="55" y="58" text-anchor="middle" font-size="9">(from charger)</text>
+  <text x="20" y="85">VBUS</text><text x="20" y="125">CC1</text><text x="20" y="150">CC2</text><text x="20" y="180">GND</text>
+  <!-- top rail -->
+  <line x1="100" y1="80" x2="330" y2="80" stroke="#000" stroke-width="2.5"/><text x="150" y="72">5 V in</text>
+  <!-- C3 -->
+  <line x1="190" y1="80" x2="190" y2="100" stroke="#000"/><line x1="178" y1="100" x2="202" y2="100" stroke="#000" stroke-width="2"/><line x1="178" y1="107" x2="202" y2="107" stroke="#000" stroke-width="2"/><line x1="190" y1="107" x2="190" y2="122" stroke="#000"/><line x1="182" y1="122" x2="198" y2="122" stroke="#000"/><text x="205" y="108">C3 100 nF</text>
+  <!-- Q1 P-mos -->
+  <rect x="330" y="62" width="70" height="36" fill="#eee" stroke="#000" stroke-width="1.5"/><text x="365" y="78" text-anchor="middle" font-weight="700">Q1</text><text x="365" y="91" text-anchor="middle" font-size="9">SI4435 P-ch</text>
+  <text x="335" y="56" font-size="9">source</text><text x="372" y="56" font-size="9">drain</text>
+  <line x1="400" y1="80" x2="610" y2="80" stroke="#000" stroke-width="2.5"/><text x="470" y="72">5 V out (switched)</text>
+  <!-- gate -->
+  <line x1="365" y1="98" x2="365" y2="150" stroke="#000"/><text x="372" y="118" font-size="9">gate</text>
+  <line x1="300" y1="80" x2="300" y2="100" stroke="#000"/><rect x="292" y="100" width="16" height="34" fill="none" stroke="#000"/><text x="250" y="122" font-size="9">R1 330k</text><line x1="300" y1="134" x2="300" y2="150" stroke="#000"/><line x1="300" y1="150" x2="365" y2="150" stroke="#000"/>
+  <!-- Q2 -->
+  <line x1="365" y1="150" x2="365" y2="175" stroke="#000"/><rect x="335" y="175" width="60" height="34" fill="#eee" stroke="#000" stroke-width="1.5"/><text x="365" y="190" text-anchor="middle" font-weight="700">Q2</text><text x="365" y="203" text-anchor="middle" font-size="9">2N7000</text>
+  <line x1="365" y1="209" x2="365" y2="225" stroke="#000"/><line x1="355" y1="225" x2="375" y2="225" stroke="#000"/><text x="380" y="228" font-size="9">GND</text>
+  <line x1="335" y1="192" x2="290" y2="192" stroke="#000"/><text x="230" y="196" font-size="9">from D10</text>
+  <line x1="310" y1="192" x2="310" y2="205" stroke="#000"/><rect x="302" y="205" width="16" height="26" fill="none" stroke="#000"/><line x1="310" y1="231" x2="310" y2="240" stroke="#000"/><line x1="302" y1="240" x2="318" y2="240" stroke="#000"/><text x="250" y="222" font-size="9">R2 330k</text>
+  <!-- R10 -->
+  <line x1="560" y1="80" x2="560" y2="100" stroke="#000"/><rect x="552" y="100" width="16" height="34" fill="none" stroke="#000"/><line x1="560" y1="134" x2="560" y2="148" stroke="#000"/><line x1="552" y1="148" x2="568" y2="148" stroke="#000"/><text x="572" y="122" font-size="9">R10 1k</text>
+  <!-- J2 -->
+  <rect x="610" y="40" width="80" height="150" fill="none" stroke="#000" stroke-width="1.5"/><text x="650" y="32" text-anchor="middle" font-weight="700">J2 cable</text><text x="650" y="58" text-anchor="middle" font-size="9">(to phone)</text>
+  <text x="620" y="85">+5V red</text><text x="620" y="265" font-size="9"> </text>
+  <!-- D1 and XIAO -->
+  <line x1="130" y1="80" x2="130" y2="270" stroke="#000"/><path d="M122,250 L138,250 L130,262 z" fill="#000"/><line x1="122" y1="263" x2="138" y2="263" stroke="#000" stroke-width="2"/><text x="60" y="258" font-size="9">D1 1N5817</text>
+  <line x1="130" y1="270" x2="200" y2="270" stroke="#000"/>
+  <rect x="200" y="255" width="260" height="140" fill="#f4f4f4" stroke="#000" stroke-width="1.5"/><text x="330" y="275" text-anchor="middle" font-weight="700">U1  XIAO ESP32-C3 (the brain)</text>
+  <text x="210" y="300">5V pin</text><text x="210" y="320">D1 (analog in): charger offer</text><text x="210" y="338">D2 (analog in): phone present?</text><text x="210" y="356">D3 / D4 / D5: current to offer</text><text x="210" y="374">D7: light</text><text x="210" y="390">D10: switch on/off</text>
+  <!-- R7 R8 to D1 -->
+  <line x1="100" y1="120" x2="160" y2="120" stroke="#000"/><line x1="100" y1="145" x2="160" y2="145" stroke="#000"/>
+  <rect x="160" y="113" width="28" height="12" fill="none" stroke="#000"/><rect x="160" y="138" width="28" height="12" fill="none" stroke="#000"/><text x="160" y="165" font-size="8">R7, R8 100k</text>
+  <line x1="188" y1="119" x2="225" y2="119" stroke="#000"/><line x1="188" y1="144" x2="225" y2="144" stroke="#000"/><line x1="225" y1="119" x2="225" y2="160" stroke="#000"/><line x1="225" y1="160" x2="240" y2="160" stroke="#000"/>
+  <path d="M240,160 C250,200 180,240 205,318" fill="none" stroke="#000" stroke-dasharray="3,2"/>
+  <!-- phone CC -->
+  <line x1="610" y1="140" x2="520" y2="140" stroke="#000"/><text x="620" y="144">CC blue</text>
+  <line x1="520" y1="140" x2="520" y2="345" stroke="#000"/>
+  <rect x="470" y="300" width="40" height="11" fill="none" stroke="#000"/><rect x="470" y="318" width="40" height="11" fill="none" stroke="#000"/><rect x="470" y="336" width="40" height="11" fill="none" stroke="#000"/><rect x="470" y="282" width="40" height="11" fill="none" stroke="#000"/>
+  <text x="530" y="291" font-size="8.5">R6 330k → D2 (sense)</text><text x="530" y="309" font-size="8.5">R3 33k ← D3 (basic)</text><text x="530" y="327" font-size="8.5">R4 12k ← D4 (1.5 A)</text><text x="530" y="345" font-size="8.5">R5 4.7k ← D5 (3 A)</text>
+  <path d="M460,288 h10 M460,306 h10 M460,324 h10 M460,342 h10 M510,288 h10 M510,306 h10 M510,324 h10 M510,342 h10" stroke="#000"/>
+  <!-- LED -->
+  <line x1="460" y1="372" x2="480" y2="372" stroke="#000"/><rect x="480" y="366" width="28" height="12" fill="none" stroke="#000"/><text x="480" y="395" font-size="8.5">R9 680</text><line x1="508" y1="372" x2="545" y2="372" stroke="#000"/><path d="M545,364 L545,380 L558,372 z" fill="none" stroke="#000"/><line x1="558" y1="364" x2="558" y2="380" stroke="#000"/><line x1="558" y1="372" x2="575" y2="372" stroke="#000"/><line x1="575" y1="372" x2="575" y2="385" stroke="#000"/><line x1="567" y1="385" x2="583" y2="385" stroke="#000"/><text x="540" y="358" font-size="8.5">LED</text>
+  <!-- ground -->
+  <line x1="100" y1="185" x2="125" y2="185" stroke="#000" stroke-dasharray="6,3"/><line x1="135" y1="185" x2="330" y2="185" stroke="#000" stroke-dasharray="6,3"/><line x1="400" y1="185" x2="610" y2="185" stroke="#000" stroke-dasharray="6,3"/><text x="350" y="425" text-anchor="middle" font-size="9">Dashed line: ground (GND, the cable's silver braid) runs straight through. C1 and C2 (100 nF) sit from D1 and D2 to ground.</text><text x="350" y="440" text-anchor="middle" font-size="9">The cable's white and green wires (D+/D−) are twisted together and not connected to the board.</text>
+  <line x1="610" y1="185" x2="610" y2="185" stroke="#000"/><text x="620" y="182">GND braid</text>
+</svg>
+<figcaption>Figure 7.1. Simplified schematic of the smart socket (board revision 0.2). Thick lines carry the charging current; thin lines are signals.</figcaption>
+</figure>
+
+<h2>7.1 J1, the input socket: Adafruit USB-C breakout (product 4090)</h2>
+<p><b>Job:</b> receive the charger's plug and present the "I am a phone" 5.1 kΩ resistors on CC1 and CC2, so the charger turns on 5 V.</p>
+<div class="why"><b>Why a ready-made breakout board?</b> A bare USB-C socket has 24 tiny contacts at 0.5 mm spacing, impossible to solder by hand reliably. Adafruit's small board already carries the socket and the two 5.1 kΩ resistors and brings the useful pins out to holes 2.54 mm apart (the standard "breadboard" spacing). It cost €2.59. Its pin order was read off the real board before the circuit board was drawn: GND, VBUS, SBU2, CC1, D−, D+, SBU1, CC2.</div>
+
+<h2>7.2 U1, the brain: Seeed Studio XIAO ESP32-C3</h2>
+<p><b>Job:</b> run the program; read the sensing signals; control the switch, the current advertisement and the light; talk Wi-Fi and Bluetooth.</p>
+<p>The ESP32-C3 chip has a 32-bit RISC-V processor running at up to 160 MHz, 400 KB of working memory (RAM), 4 MB of storage for the program (flash) on the XIAO board, 2.4 GHz Wi-Fi (802.11 b/g/n) and Bluetooth Low Energy 5, plus analog inputs and even a built-in temperature sensor, which the socket uses for its heat cut-out.</p>
+<div class="why"><b>Why this board?</b> It combines Wi-Fi <b>and</b> Bluetooth in one chip (the older ESP8266 has no Bluetooth; an Arduino Uno has neither; a Raspberry Pi is a full computer, larger, more expensive and slow to start). The XIAO is thumb-sized (21 × 17.8 mm), costs about €4.61, has its own USB-C port for programming, and is supported by the free Arduino software. Its external antenna connector gave a reliable signal from inside a closed case.</div>
+<p><b>Pins used</b> (the others are left free on purpose; GPIO2, GPIO8 and GPIO9 affect how the chip starts up, and GPIO9 is the BOOT button):</p>
+<table>
+<tr><th>Pin</th><th>Use</th></tr>
+<tr><td>D1 (analog)</td><td>Reads what the charger offers, through R7 and R8.</td></tr>
+<tr><td>D2 (analog)</td><td>Reads the phone's CC through R6: is a phone plugged in?</td></tr>
+<tr><td>D3, D4, D5</td><td>Drive the phone's CC through 33 kΩ, 12 kΩ or 4.7 kΩ: basic, 1.5 A or 3 A. Only one is driven at a time; the other two are switched to "input" so they are effectively disconnected.</td></tr>
+<tr><td>D7</td><td>The light, through R9.</td></tr>
+<tr><td>D10</td><td>Turns the power switch on (through Q2).</td></tr>
+<tr><td>5V, GND</td><td>Power in.</td></tr>
+</table>
+
+<h2>7.3 D1, the power diode for the brain: 1N5817 Schottky</h2>
+<p><b>Job:</b> feed the charger's 5 V into the XIAO's 5V pin, but stop current flowing <b>backwards</b> out of it.</p>
+<div class="why"><b>Why it is needed.</b> Seeed's own documentation says that when powering the XIAO through its 5V pin, a diode must be placed between the external supply and the pin (anode to the supply, cathode to the pin). Otherwise, when the XIAO's own USB cable is plugged into a laptop at the same time, the laptop's USB 5 V would flow backwards into the charger circuit (and the charger's into the laptop). With D1 in place, both can be connected safely, which is exactly how the firmware was later uploaded and tested.<br><b>Why a Schottky.</b> Its forward drop is only about 0.3 to 0.45 V (versus 0.6 to 0.7 V for a normal diode), so the XIAO still receives about 4.6 V, plenty for its internal 3.3 V regulator. The 1N5817 handles 1 A and 20 V, far more than the brain's roughly 0.1 A.</div>
+
+<h2>7.4 Q1, the power switch: SI4435DDY P-channel MOSFET</h2>
+<p><b>Job:</b> connect or disconnect the 5 V going to the phone, carrying up to 3 A.</p>
+<p>Q1 is placed in the <b>positive</b> (VBUS) line: its source goes to the charger's 5 V and its drain to the phone. Its gate decides. With the gate at 5 V (the same as the source) it is OFF; pulling the gate down to 0 V makes it fully ON.</p>
+<figure>
+<svg viewBox="0 0 640 170" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="11">
+  <text x="150" y="18" text-anchor="middle" font-weight="700">D10 LOW: charging OFF</text>
+  <text x="480" y="18" text-anchor="middle" font-weight="700">D10 HIGH: charging ON</text>
+  <g>
+  <line x1="40" y1="50" x2="260" y2="50" stroke="#000" stroke-width="2"/><rect x="120" y="38" width="60" height="24" fill="#fff" stroke="#000"/><text x="150" y="54" text-anchor="middle">Q1 off</text>
+  <text x="40" y="44">5 V</text><text x="230" y="44">0 V</text>
+  <line x1="150" y1="62" x2="150" y2="100" stroke="#000"/><text x="158" y="85">gate = 5 V (held by R1)</text>
+  <rect x="120" y="100" width="60" height="24" fill="#fff" stroke="#000"/><text x="150" y="116" text-anchor="middle">Q2 off</text>
+  <text x="60" y="150">no gate pull-down → no path</text>
+  </g>
+  <g transform="translate(330,0)">
+  <line x1="40" y1="50" x2="260" y2="50" stroke="#000" stroke-width="4"/><rect x="120" y="38" width="60" height="24" fill="#ddd" stroke="#000"/><text x="150" y="54" text-anchor="middle">Q1 ON</text>
+  <text x="40" y="44">5 V</text><text x="225" y="44">5 V</text>
+  <line x1="150" y1="62" x2="150" y2="100" stroke="#000"/><text x="158" y="85">gate pulled to 0 V</text>
+  <rect x="120" y="100" width="60" height="24" fill="#ddd" stroke="#000"/><text x="150" y="116" text-anchor="middle">Q2 ON</text>
+  <line x1="150" y1="124" x2="150" y2="140" stroke="#000"/><line x1="140" y1="140" x2="160" y2="140" stroke="#000"/>
+  <text x="40" y="160">3.3 V on D10 turns Q2 on, Q2 grounds Q1's gate</text>
+  </g>
+</svg>
+<figcaption>Figure 7.2. How the brain's 3.3 V signal switches 5 V at 3 A, using a small transistor (Q2) to drive the big one (Q1).</figcaption>
+</figure>
+<div class="why"><b>Why P-channel and not N-channel?</b> An N-channel MOSFET in the positive line would need its gate driven <b>above</b> 5 V (around 10 V or more) to turn fully on, which needs an extra "charge pump" circuit. A P-channel only needs its gate pulled down to 0 V, which a tiny transistor can do. N-channel parts are slightly more efficient, but for 3 A the P-channel's simplicity wins.<br><b>Why switch the positive line and not ground?</b> Switching the ground of a USB device is unreliable: the phone's ground would "float" while it is still connected through the cable's shield and the CC line. Switching VBUS is exactly what unplugging does.<br><b>Why SI4435DDY?</b> It is rated for 30 V and many amperes, and its on-resistance is only a few hundredths of an ohm when its gate is pulled 4.5 V below its source. At 3 A it wastes roughly I² × R ≈ 3² × 0.035 ≈ 0.3 W, which its small package sheds easily. In the lab it stayed "not even warm" at the 3 A setting. It was the only part in the order able to switch 3 A, which is why it is the one small surface-mount part on an otherwise through-hole board.</div>
+
+<h2>7.5 Q2, the helper: 2N7000 N-channel MOSFET, with R1 and R2</h2>
+<p><b>Job:</b> translate the brain's 3.3 V "ON" signal into "pull Q1's gate to ground".</p>
+<ul>
+  <li>The brain cannot control Q1 directly: its pin only reaches 3.3 V, so it could never hold Q1's gate at the full 5 V needed to turn it OFF, and a 5 V gate would damage the 3.3 V pin. Q2 isolates the two voltages: the brain only ever touches Q2's gate.</li>
+  <li><b>R1 (330 kΩ)</b> from Q1's gate to 5 V is a <b>pull-up</b>: when nothing pulls the gate down, R1 holds it at 5 V, so Q1 is <b>OFF by default</b>.</li>
+  <li><b>R2 (330 kΩ)</b> from Q2's gate to ground is a <b>pull-down</b>: during the first fraction of a second after power-up, before the program runs, the brain's pins "float". R2 keeps Q2 (and therefore Q1) off so the phone is never powered by accident.</li>
+</ul>
+<div class="why"><b>Why such large resistors (330 kΩ)?</b> When Q2 is on, current flows through R1 continuously: 5 V ÷ 330 kΩ ≈ 15 µA, negligible. A smaller resistor would switch faster but waste more; switching speed does not matter here. The 2N7000 was chosen because it turns on reliably from 3.3 V, is cheap (€0.57) and was already in the order for the lock-in project.</div>
+
+<h2>7.6 R3, R4, R5: telling the phone how much it may take</h2>
+<p><b>Job:</b> act as the charger's Rp towards the phone. The brain drives exactly one of them at 3.3 V.</p>
+<table>
+<tr><th>Pin</th><th>Resistor</th><th>CC voltage with the phone's 5.1 kΩ</th><th>Phone reads</th></tr>
+<tr><td>D3</td><td>R3 = 33 kΩ</td><td>3.3 × 5.1 ÷ (33 + 5.1) = 0.44 V</td><td>Basic USB current</td></tr>
+<tr><td>D4</td><td>R4 = 12 kΩ</td><td>3.3 × 5.1 ÷ (12 + 5.1) = 0.98 V</td><td>1.5 A</td></tr>
+<tr><td>D5</td><td>R5 = 4.7 kΩ</td><td>3.3 × 5.1 ÷ (4.7 + 5.1) = 1.72 V</td><td>3 A</td></tr>
+</table>
+<div class="why"><b>Why these values and not the "official" 56 k / 22 k / 10 k?</b> Those official values assume Rp is pulled up to 5 V. Here Rp is driven from the brain's 3.3 V pin, so the values were recalculated to land in the middle of each window. A first draft used 10 kΩ for 3 A: the arithmetic gave 1.11 V, which a phone reads as only 1.5 A, so it was corrected to 4.7 kΩ before anything was built. A check on paper caught an error that would otherwise have shown up as "mysteriously slower charging".</div>
+
+<h2>7.7 R6: is a phone plugged in?</h2>
+<p><b>Job:</b> let the brain measure the phone's CC voltage on analog pin D2 without disturbing it. R6 is 330 kΩ, far larger than the other resistors, so it hardly loads the line. With nothing attached, D3's 33 kΩ pulls CC up towards 3.3 V (above 1.6 V on D2). When a phone's 5.1 kΩ Rd is present the voltage drops to about 0.44 V. The program treats 0.15 to 1.6 V (2.3 V when 3 A is offered) as "phone present". In the real test it read 0.46 V with the tablet attached and 2.9 V with nothing attached.</p>
+
+<h2>7.8 R7, R8 and C1: what does the charger offer?</h2>
+<p><b>Job:</b> read the charger's advertisement. The charger's CC voltage appears on J1's CC1 or CC2 (whichever the plug connects; the other sits near 0 V). R7 and R8 (100 kΩ each) join both into analog pin D1, which therefore sees about <b>half</b> the active CC voltage. The program's thresholds are halved accordingly: above 0.62 V means 3 A, 0.33 to 0.62 V means 1.5 A, below that means basic. C1 (100 nF) smooths the reading.</p>
+<p>Real readings: with the laptop charger just after restart, D1 read <b>206 mV</b> (basic). With a real phone charger and later the laptop charger, it read <b>838 to 842 mV</b> (3 A). Doubling 842 mV gives 1.68 V, exactly the spec's 3 A level.</p>
+
+<h2>7.9 R10: the bleeder</h2>
+<p><b>Job:</b> when Q1 switches off, capacitors in the phone and cable hold some charge, so VBUS would fall slowly. A phone might not notice the "unplug" cleanly. R10 (1 kΩ) from the output to ground empties that charge within milliseconds. It costs 5 mA (25 mW) only while charging.</p>
+
+<h2>7.10 C3: input smoothing</h2>
+<p>100 nF across the 5 V input. When the phone suddenly starts drawing current, the long charger cable cannot react instantly; C3 supplies the first instant. It was originally 1 µF; 100 nF was used on the final board because the charger and the XIAO already have their own capacitors and a spare 100 nF disc was available.</p>
+
+<h2>7.11 The light: LED and R9 (680 Ω)</h2>
+<p>A red 5 mm LED shows the state through a hole in the lid. Its current: (3.3 V − 1.9 V) ÷ 680 Ω ≈ 2 mA, bright enough to see and well within the pin's limits. The program can dim it (rapid switching, called PWM).</p>
+<table>
+<tr><th>Light</th><th>Meaning</th></tr>
+<tr><td>Off</td><td>No phone connected</td></tr>
+<tr><td>Steady</td><td>Charging</td></tr>
+<tr><td>Blink once a second</td><td>Phone present, paused (limit, timer or charging hours)</td></tr>
+<tr><td>Fast blinking</td><td>Setup mode open</td></tr>
+<tr><td>Very fast flicker</td><td>A program update is being written</td></tr>
+<tr><td>Short flash every 2 s</td><td>Too warm, paused</td></tr>
+<tr><td>Rapid flashing for 8 s</td><td>"Find me"</td></tr>
+</table>
+
+<h2>7.12 J2, the output cable</h2>
+<p>Instead of a second socket, the phone side is <b>half of a USB-C to USB-C cable</b>, cut about 15 cm from the plug and soldered to three pads.</p>
+<div class="why"><b>Why a cut cable?</b> A proper output socket would need its own breakout board plus circuitry to handle the phone's plug either way up. A cable gives a fixed, correct orientation for free, costs about €3, and makes the device a simple "inline adapter". It must be <b>USB-C to USB-C</b>: a USB-A-to-C cable has no CC wire and a fixed resistor in the plug that would fight the socket's signalling. A plain "USB 2.0, 3 A / 60 W" type was chosen: higher-spec cables (USB 3, 100 W, Thunderbolt) contain extra wires and sometimes a chip.</div>
+<p>The cut cable had four coloured wires and a bare braided shield. The wire colours are <b>not standardised</b>, so each was identified with the multimeter's continuity beeper against the input board's pins:</p>
+<table>
+<tr><th>Wire</th><th>Found to be</th><th>Goes to</th></tr>
+<tr><td>Red</td><td>VBUS</td><td>J2 +5V (square pad)</td></tr>
+<tr><td>Blue</td><td>CC</td><td>J2 CC</td></tr>
+<tr><td>Silver braid</td><td>Ground (no black wire in this cable)</td><td>J2 GND</td></tr>
+<tr><td>White, green</td><td>D+ and D− (data)</td><td>Twisted together, insulated (chapter 6)</td></tr>
+</table>
+
+<h2>7.13 The button</h2>
+<p>No extra button was added: the XIAO's own <b>BOOT</b> button is reused, pressed through a thin flexible skin in the lid. One press: charge to 100 % once. Three quick presses: join Wi-Fi by WPS. Hold 3 s: open setup. Hold 10 s: forget everything.</p>
+
+<!-- ============================================================ 8 -->
+<h1>8. All the calculations in one place</h1>
+<table>
+<tr><th>Question</th><th>Calculation</th><th>Result</th></tr>
+<tr><td>Maximum power to the phone</td><td>5 V × 3 A</td><td>15 W</td></tr>
+<tr><td>Heat in Q1 at 3 A</td><td>3² × ~0.035 Ω</td><td>~0.3 W (stays cool)</td></tr>
+<tr><td>Current through R1 when charging</td><td>5 V ÷ 330 kΩ</td><td>15 µA</td></tr>
+<tr><td>CC voltage, basic</td><td>3.3 × 5.1 ÷ 38.1</td><td>0.44 V</td></tr>
+<tr><td>CC voltage, 1.5 A</td><td>3.3 × 5.1 ÷ 17.1</td><td>0.98 V</td></tr>
+<tr><td>CC voltage, 3 A</td><td>3.3 × 5.1 ÷ 9.8</td><td>1.72 V</td></tr>
+<tr><td>Rejected 10 kΩ for 3 A</td><td>3.3 × 5.1 ÷ 15.1</td><td>1.11 V = reads as 1.5 A (wrong)</td></tr>
+<tr><td>Charger offer threshold, 3 A</td><td>half of 1.31 V window start, with margin</td><td>0.62 V on D1</td></tr>
+<tr><td>LED current</td><td>(3.3 − 1.9) ÷ 680</td><td>~2 mA</td></tr>
+<tr><td>Bleeder current</td><td>5 ÷ 1000</td><td>5 mA (25 mW)</td></tr>
+<tr><td>Voltage to the XIAO</td><td>5 V − ~0.4 V (Schottky)</td><td>~4.6 V</td></tr>
+<tr><td>Expected resistance J2 +5V to GND, power off</td><td>R10</td><td>1 kΩ (measured 0.999 kΩ)</td></tr>
+</table>
+<p>No circuit simulation was run for this project, deliberately: the circuit is resistor dividers and one switch, so the arithmetic above is everything a simulator would show. What arithmetic cannot predict is how real chargers and phones behave, which is what the breadboard test and the bench measurements were for.</p>
+
+<!-- ============================================================ 9 -->
+<h1>9. From idea to circuit board</h1>
+
+<h2>9.1 Step 1: proof on a breadboard</h2>
+<p>A <b>breadboard</b> is a plastic board full of spring contacts, in which parts are pushed in and connected with wires, no soldering needed. The circuit was first planned on the lock-in project's breadboard, at basic current only, because breadboard contacts are not made for 3 A. A script checked the breadboard layout against the circuit (16 connections), and deliberately "broke" it 66 ways to make sure the check catches mistakes.</p>
+
+<h2>9.2 Step 2: the schematic in KiCad</h2>
+<p><b>KiCad</b> is free, professional-grade software for designing circuit boards. The design starts as a <b>schematic</b> (the circuit drawing), checked by KiCad's <b>electrical rules check</b> (ERC): 0 errors, 0 warnings. A separate script compared every connection in the drawing to the intended circuit: 16 of 16 matched.</p>
+
+<h2>9.3 Step 3: footprints</h2>
+<p>Each part is given a <b>footprint</b>: the exact pattern of holes and copper pads it needs on the board. Footprints for the XIAO and the Adafruit board were copied from the manufacturers' own files (Seeed's pin spacing 15.24 mm between the two rows; Adafruit's pins 11.43 mm behind the socket edge), so the modules would drop straight in.</p>
+
+<h2>9.4 Step 4: the layout ("board rev 0.2")</h2>
+<figure>
+<img src="img/board-layout.jpg" alt="board layout">
+<figcaption>Figure 9.1. The board layout as drawn in KiCad: 51.2 × 24 mm. Charger in at the left end, cable out at the right end.</figcaption>
+</figure>
+<p>The final board measures only <b>51.2 × 24 mm</b>. It replaced a first version (61.5 × 24 mm with ten tiny surface-mount parts) the same day, after deciding together on three goals: <b>no extra cost</b>, <b>as little fine soldering as possible</b>, and a straight <b>"inline dongle"</b> shape.</p>
+<h3>The "sandwich" idea</h3>
+<p>The two modules (the input board J1 and the XIAO) stand on pin headers about 2.5 mm above the board. That empty space underneath was used: the ten resistors and the diode <b>lie flat on the underside, under the modules</b>. This shrank the board by about 10 mm and let every resistor be a cheap leaded spare from the lock-in order.</p>
+<figure>
+<svg viewBox="0 0 640 150" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="11">
+  <rect x="40" y="70" width="560" height="10" fill="#bbb" stroke="#000"/><text x="610" y="79" font-size="10">PCB</text>
+  <rect x="60" y="35" width="140" height="10" fill="#fff" stroke="#000"/><text x="130" y="28" text-anchor="middle">J1 module (on headers)</text>
+  <rect x="250" y="35" width="150" height="10" fill="#fff" stroke="#000"/><text x="325" y="28" text-anchor="middle">XIAO module (on headers)</text>
+  <path d="M80,45 v25 M110,45 v25 M140,45 v25 M170,45 v25 M270,45 v25 M300,45 v25 M330,45 v25 M360,45 v25 M390,45 v25" stroke="#000"/>
+  <rect x="430" y="52" width="30" height="18" fill="#ddd" stroke="#000"/><text x="445" y="46" text-anchor="middle" font-size="9">Q1</text>
+  <rect x="490" y="40" width="10" height="30" fill="#ddd" stroke="#000"/><text x="495" y="34" text-anchor="middle" font-size="9">LED</text>
+  <rect x="90" y="84" width="40" height="8" rx="3" fill="#ddd" stroke="#000"/><rect x="150" y="84" width="40" height="8" rx="3" fill="#ddd" stroke="#000"/><rect x="270" y="84" width="40" height="8" rx="3" fill="#ddd" stroke="#000"/><rect x="330" y="84" width="40" height="8" rx="3" fill="#ddd" stroke="#000"/>
+  <text x="230" y="115" text-anchor="middle">resistors and diode lying flat on the UNDERSIDE, below the modules</text>
+</svg>
+<figcaption>Figure 9.2. Side view of the "sandwich": modules on top, resistors tucked underneath.</figcaption>
+</figure>
+
+<h3>Designing for 3 A</h3>
+<p>A thin copper track behaves like a resistor and heats up. The 3 A path therefore does not use thin tracks: it uses wide <b>copper areas</b> ("pours" or "zones"). The 5 V input runs along the back edge on <b>both</b> layers, joined by a row of vias; the phone side is a copper area between Q1 and J2. The rest of both layers is filled with ground copper, which also helps shield the radio.</p>
+<h3>Making assembly foolproof</h3>
+<p>White labels were added so modules cannot go on the wrong way: "GND / VBUS / CC1" beside J1's pins, "J1 parts up &lt; socket", "U1 USB this edge", and "+5V / CC / GND" beside the cable holes. The cable holes are 0.9 mm so 22 AWG wires fit.</p>
+
+<h2>9.5 Step 5: checking before ordering</h2>
+<ul>
+  <li><b>Design rule check (DRC)</b>: KiCad checks that no tracks are too close, too thin or unconnected. Result: 0 errors, 0 unconnected, 0 differences from the schematic.</li>
+  <li><b>Manufacturing files read back</b>: the order files ("Gerbers") were re-read and compared with the design: 72 of 72 holes, outline 51.2 × 24 mm, everything within the manufacturer's standard limits.</li>
+  <li><b>1:1 paper print</b>: the board printed at real size, with the real parts laid on it.</li>
+</ul>
+<figure><img src="img/board-3d.jpg" alt="3D board"><figcaption>Figure 9.3. KiCad's 3D view of the finished board.</figcaption></figure>
+
+<!-- ============================================================ 10 -->
+<h1>10. Ordering the boards</h1>
+<p>A PCB is ordered by uploading <b>Gerber files</b> (one file per copper layer, mask, silkscreen and drill holes, zipped together) to a board maker. The two serious low-cost options for students are JLCPCB and PCBWay, both in China.</p>
+<table>
+<tr><th></th><th>JLCPCB</th><th>PCBWay (chosen)</th></tr>
+<tr><td>Quote for both designs, 5 of each</td><td>US $21.36</td><td>US $17.71 all in</td></tr>
+<tr><td>Notes</td><td>Approved, never paid</td><td>$5 new-customer coupon; VAT and EU duty prepaid (IOSS), so nothing to pay at the door</td></tr>
+</table>
+<p>Specification: 2 layers, 1.6 mm thick, green mask, white silkscreen, <b>HASL lead-free</b> finish (pads coated with solder, easy to solder by hand). Five is the minimum quantity, so there are spares for mistakes or a second unit. Both designs passed the automatic file check. The boards were made, shipped by economy post and delivered in <b>8 days</b>, then inspected from photos before pressing "Confirm received": all footprints, labels and holes as designed.</p>
+<figure><img src="img/bare-boards.jpg" alt="bare boards" style="max-height:120mm"><figcaption>Figure 10.1. The bare boards as delivered.</figcaption></figure>
+
+<h2>10.1 The parts order</h2>
+<p>All parts came in <b>one DigiKey order</b> shared with the lock-in amplifier (92.64 euros including VAT, free delivery above 75 euros before VAT). The rule for the smart socket was <b>"nothing extra bought"</b>: it uses its own few parts (the XIAO, the USB-C board, the power MOSFET, the Schottky diode, four resistor values) plus spares from the lock-in order. Only the USB-C cable came from a shop. Total cost of the smart socket's own parts: about 14.50 euros, plus its share of the boards.</p>
+
+<!-- ============================================================ 11 -->
+<h1>11. Assembly: soldering, step by step</h1>
+
+<h2>11.1 What soldering is</h2>
+<p><b>Soldering</b> joins a component's leg to a copper pad with molten metal (solder, a tin alloy, melting around 220 °C). The <b>soldering iron</b> heats both the pad and the leg; solder is touched to them (not to the iron) and flows around both, guided by <b>flux</b> (a cleaner built into the solder wire). A good joint is <b>shiny and shaped like a small cone</b>, wetting both the pad and the leg. A dull, round blob sitting on top ("cold joint") may not connect at all.</p>
+<figure>
+<svg viewBox="0 0 640 150" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="11">
+  <rect x="40" y="100" width="160" height="10" fill="#bbb" stroke="#000"/><line x1="120" y1="20" x2="120" y2="125" stroke="#000" stroke-width="3"/><path d="M95,100 Q120,70 145,100 z" fill="#888" stroke="#000"/><text x="120" y="140" text-anchor="middle">GOOD: shiny cone</text>
+  <rect x="240" y="100" width="160" height="10" fill="#bbb" stroke="#000"/><line x1="320" y1="20" x2="320" y2="125" stroke="#000" stroke-width="3"/><circle cx="320" cy="85" r="14" fill="#888" stroke="#000"/><text x="320" y="140" text-anchor="middle">BAD: blob, not touching pad</text>
+  <rect x="440" y="100" width="160" height="10" fill="#bbb" stroke="#000"/><line x1="490" y1="20" x2="490" y2="125" stroke="#000" stroke-width="3"/><line x1="550" y1="20" x2="550" y2="125" stroke="#000" stroke-width="3"/><path d="M470,100 Q520,70 570,100 z" fill="#888" stroke="#000"/><text x="520" y="140" text-anchor="middle">BAD: bridge joins two pads</text>
+</svg>
+<figcaption>Figure 11.1. Good and bad solder joints.</figcaption>
+</figure>
+
+<h2>11.2 Why the order of assembly matters</h2>
+<p>Parts are soldered in an order chosen so that nothing blocks a later step, and with a <b>multimeter check after each stage</b> so a mistake is caught while it is still easy to fix.</p>
+<ol>
+  <li><b>Q1 first</b> (the only small surface-mount part). It needs flat, free access to its eight pads. Its dot marks pin 1; pins 1 to 3 are the source, pin 4 the gate, pins 5 to 8 the drain. The four drain pins may touch each other, as may the three source pins, but <b>pin 4 must not touch pin 3</b>.</li>
+  <li><b>Resistors and D1 on the underside</b>, before the modules cover them. The legs go through from below; after soldering they are cut flush on top so the modules sit flat. Each resistor's colour bands were checked before soldering.</li>
+  <li><b>Q2, C1 to C3 and the LED</b> on top. The LED stands so its tip reaches the lid's hole (measured 9 mm).</li>
+  <li><b>The two modules</b> on their pin headers. Only the pins actually used need soldering (9 of the XIAO's 14, 4 of J1's 8).</li>
+  <li><b>The cable</b> last.</li>
+</ol>
+
+<h2>11.3 The checks after each stage</h2>
+<table>
+<tr><th>Stage</th><th>Check</th><th>Expected</th><th>Measured in the lab</th></tr>
+<tr><td>Bare board</td><td>Continuity J1 GND–VBUS, J2 +5V–GND</td><td>Open (no beep)</td><td>Open ✔</td></tr>
+<tr><td>After resistors</td><td>J2 +5V to GND (power off)</td><td>~1 kΩ (R10)</td><td>997 Ω ✔</td></tr>
+<tr><td>After J1, charger in</td><td>VBUS to GND</td><td>~5 V</td><td>4.95 V ✔</td></tr>
+<tr><td>Same</td><td>J2 +5V to GND (no phone, Q1 must stay off)</td><td>0 V</td><td>0 V ✔</td></tr>
+<tr><td>After XIAO</td><td>Power-up, setup light</td><td>Fast blinking (no Wi-Fi saved yet)</td><td>✔</td></tr>
+<tr><td>After cable</td><td>J2 +5V–GND, CC–GND, CC–+5V</td><td>~1 kΩ, no beep, no beep</td><td>0.999 kΩ, ✔, ✔</td></tr>
+<tr><td>First charge</td><td>J2 +5V to GND with tablet</td><td>~4.9 V</td><td>4.93 V ✔</td></tr>
+</table>
+<h3>A mistake caught in time</h3>
+<p>The XIAO was first fitted <b>upside down</b> on its headers. The check before power-up caught it; it was taken off and refitted with its metal shield facing up. Checking before applying power is the whole point of staged assembly.</p>
+
+<h2>11.4 Preparing the cable</h2>
+<figure class="two">
+<figure><img src="img/cable-strip.jpg" alt="cable stripped" style="max-height:80mm"><figcaption>Figure 11.2. The cut cable: four coloured wires and a bare braided shield (which turned out to be ground).</figcaption></figure>
+<figure><img src="img/cable-soldered.jpg" alt="cable soldered" style="max-height:80mm"><figcaption>Figure 11.3. Red into +5V (square pad), blue into CC, braid into GND.</figcaption></figure>
+</figure>
+<p>Length: 15 cm from the plug. The jacket was removed for about 3 cm, the foil and filler threads cut away, each wire stripped about 3 mm and pre-coated with solder ("tinned") so it slides into its hole. The thin blue CC wire was the hardest. Lessons learned: <b>trim every stray strand of braid</b> (one loose strand touching the CC pad would stop charging), and insulate the white/green joint so it cannot touch anything.</p>
+
+<!-- ============================================================ 12 -->
+<h1>12. Testing the finished board</h1>
+<figure><img src="img/first-charge.jpg" alt="first charge" style="max-height:110mm"><figcaption>Figure 12.1. The first charge: the board, still uncased, powering the tablet; the steady red light means "charging".</figcaption></figure>
+<h2>12.1 First power and first charge</h2>
+<p>With the charger in and no phone, the output read 0 V (correct: the switch stays off). Plugging in the tablet: within seconds the light went steady, the output read <b>4.93 V</b>, and the tablet began charging. With a 3 A charger and the 3 A setting, Q1 stayed cold to the touch.</p>
+<h2>12.2 Feature test on the real device</h2>
+<p>A test script (<code>tools/test_features.py</code>) exercised every feature over Wi-Fi with the tablet attached, restoring all settings afterwards. <b>24 of 25 checks passed</b>; the one "failure" revealed that the timer counted from plug-in rather than from when it was set. That behaviour was then changed in firmware 1.8 and re-tested (59 s left after setting a 1-minute timer, stopped at the minute).</p>
+<table>
+<tr><th>Feature</th><th>Result</th></tr>
+<tr><td>Battery limit stops charging; raising it resumes at once</td><td>✔</td></tr>
+<tr><td>"100 % once" goes past the limit, and cancels</td><td>✔</td></tr>
+<tr><td>Modes always / never / use limits</td><td>✔</td></tr>
+<tr><td>Charging hours: paused outside, charging inside the window</td><td>✔</td></tr>
+<tr><td>Current 0.5 / 1.5 / 3 A really offered</td><td>✔</td></tr>
+<tr><td>PIN: refused without, wrong refused, right accepted, removed</td><td>✔</td></tr>
+<tr><td>Light brightness, find me, rename, history, network list, Wi-Fi scan</td><td>✔</td></tr>
+<tr><td>Laptop app over Wi-Fi only and over Bluetooth only</td><td>✔</td></tr>
+<tr><td>Program updates over Wi-Fi (30 s) and Bluetooth (35 s), from laptop and tablet</td><td>✔</td></tr>
+</table>
+
+<!-- ============================================================ 13 -->
+<h1>13. The program inside the controller</h1>
+<p>The program (called <b>firmware</b> because it lives permanently in the device) is written in C++ using the free Arduino software and Espressif's ESP32 support package. It is about 1.56 MB once compiled, 79 % of the space available for one program.</p>
+
+<h2>13.1 How a microcontroller program runs</h2>
+<p>When power arrives, the program runs a <b>setup</b> part once (configure the pins, load the saved settings, start Wi-Fi and Bluetooth), then a <b>loop</b> part forever, many times a second. Each pass of the loop: read the sensors, decide, set the outputs, handle any messages from apps, update the light.</p>
+
+<h2>13.2 The decision rule and hysteresis</h2>
+<p>The central rule is simple, but it has an important detail called <b>hysteresis</b>: using <b>two</b> thresholds instead of one.</p>
+<ul>
+  <li>A battery report <b>at or above</b> the upper limit (80 %) → stop charging.</li>
+  <li>A report <b>at or below</b> the lower limit (40 %) → allow charging.</li>
+  <li>Anything <b>in between</b> → change nothing.</li>
+</ul>
+<figure>
+<svg viewBox="0 0 640 210" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="11">
+  <line x1="60" y1="180" x2="620" y2="180" stroke="#000"/><line x1="60" y1="180" x2="60" y2="36" stroke="#000"/>
+  <text x="340" y="205" text-anchor="middle">time</text><text x="25" y="100" transform="rotate(-90 25 100)" text-anchor="middle">battery %</text>
+  <line x1="60" y1="50" x2="620" y2="50" stroke="#000" stroke-dasharray="5,3"/><text x="618" y="44" text-anchor="end">upper limit 80 %: stop</text>
+  <line x1="60" y1="130" x2="620" y2="130" stroke="#000" stroke-dasharray="5,3"/><text x="618" y="148" text-anchor="end">lower limit 40 %: start</text>
+  <path d="M60,150 L160,50 L300,130 L400,50 L540,130 L600,90" fill="none" stroke="#000" stroke-width="2.5"/>
+  <text x="110" y="20" text-anchor="middle" font-size="10">charging</text><text x="230" y="20" text-anchor="middle" font-size="10">paused (in use)</text><text x="350" y="20" text-anchor="middle" font-size="10">charging</text><text x="470" y="20" text-anchor="middle" font-size="10">paused</text>
+  <path d="M110,24 v8 M230,24 v8 M350,24 v8 M470,24 v8" stroke="#000"/>
+</svg>
+<figcaption>Figure 13.1. Hysteresis: the battery cycles between the two limits instead of switching on and off around one value.</figcaption>
+</figure>
+<div class="why"><b>Why two limits?</b> With a single limit (stop at 80, start below 80) the socket would switch on and off every time the percentage wobbled between 79 and 80, many times an hour, which is bad for the battery and the switch. The same idea protects the heat cut-out: off at 75 °C, on again only below 65 °C.</div>
+
+<h2>13.3 A charging session, step by step</h2>
+<figure>
+<svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="10.5">
+  <defs><marker id="b" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#000"/></marker></defs>
+  <rect x="10" y="20" width="120" height="50" rx="8" fill="none" stroke="#000"/><text x="70" y="40" text-anchor="middle">power on</text><text x="70" y="55" text-anchor="middle">wait 5 s, output off</text>
+  <rect x="170" y="20" width="140" height="50" rx="8" fill="none" stroke="#000"/><text x="240" y="40" text-anchor="middle">read charger offer (D1)</text><text x="240" y="55" text-anchor="middle">offer "basic" to phone</text>
+  <rect x="350" y="20" width="140" height="50" rx="8" fill="none" stroke="#000"/><text x="420" y="40" text-anchor="middle">phone seen on D2</text><text x="420" y="55" text-anchor="middle">for 0.15 s?</text>
+  <rect x="520" y="20" width="130" height="50" rx="8" fill="none" stroke="#000"/><text x="585" y="40" text-anchor="middle">allowed? (limits,</text><text x="585" y="55" text-anchor="middle">timer, hours, heat)</text>
+  <rect x="520" y="130" width="130" height="60" rx="8" fill="#eee" stroke="#000"/><text x="585" y="152" text-anchor="middle" font-weight="700">CHARGE</text><text x="585" y="167" text-anchor="middle">Q1 on, offer the</text><text x="585" y="180" text-anchor="middle">matching current</text>
+  <rect x="300" y="130" width="160" height="60" rx="8" fill="none" stroke="#000"/><text x="380" y="152" text-anchor="middle" font-weight="700">PAUSED</text><text x="380" y="167" text-anchor="middle">Q1 off, keep watching</text><text x="380" y="180" text-anchor="middle">light blinks</text>
+  <rect x="60" y="130" width="160" height="60" rx="8" fill="none" stroke="#000"/><text x="140" y="152" text-anchor="middle" font-weight="700">NO PHONE</text><text x="140" y="167" text-anchor="middle">phone gone for 0.1 s:</text><text x="140" y="180" text-anchor="middle">Q1 off, light off</text>
+  <line x1="130" y1="45" x2="170" y2="45" stroke="#000" marker-end="url(#b)"/><line x1="310" y1="45" x2="350" y2="45" stroke="#000" marker-end="url(#b)"/><line x1="490" y1="45" x2="520" y2="45" stroke="#000" marker-end="url(#b)"/>
+  <line x1="585" y1="70" x2="585" y2="130" stroke="#000" marker-end="url(#b)"/><text x="592" y="105">yes</text>
+  <line x1="545" y1="70" x2="440" y2="130" stroke="#000" marker-end="url(#b)"/><text x="470" y="105">no</text>
+  <path d="M520,175 L460,175" stroke="#000" marker-end="url(#b)"/><path d="M460,145 L520,145" stroke="#000" marker-end="url(#b)"/><text x="490" y="140" font-size="9">limit / timer</text><text x="490" y="190" font-size="9">reached</text>
+  <path d="M300,160 L220,160" stroke="#000" marker-end="url(#b)"/><text x="260" y="152" font-size="9">unplugged</text>
+  <text x="330" y="235" text-anchor="middle">Settings and the "paused" decision are re-checked many times a second.</text>
+</svg>
+<figcaption>Figure 13.2. The socket's main states.</figcaption>
+</figure>
+<p>Details that came from careful thinking, each with a reason:</p>
+<ul>
+  <li><b>5-second wait at power-up.</b> Fast chargers switch their output off and on a few times while discovering that the socket does not speak their fast-charge protocol. Waiting avoids reacting to that.</li>
+  <li><b>Debounce.</b> A phone must be seen for 0.15 s before charging starts, and missing for 0.1 s before power is cut, so a single noisy reading cannot cause a false "unplug" (USB-C itself allows up to about 0.65 s).</li>
+  <li><b>Smoothing.</b> The charger reading is averaged over about eight passes so it cannot flip between two values near a threshold.</li>
+  <li><b>Sagging-charger protection.</b> If a weak charger's voltage collapses and restarts the controller (a "brownout"), the socket offers only basic current until it is unplugged.</li>
+  <li><b>Start allowed after every power-up</b> (firmware 1.8): the device's first battery report, within a minute, stops it again if needed. This fixed a real bug (chapter 17).</li>
+</ul>
+
+<h2>13.4 Memory that survives power cuts</h2>
+<p>Settings (limits, mode, name, PIN, saved Wi-Fi networks, charging history) are stored in the chip's <b>flash memory</b> using a small key-value store ("Preferences", built on Espressif's non-volatile storage). They survive unplugging.</p>
+
+<h2>13.5 The watchdog</h2>
+<p>A <b>watchdog</b> is a timer that the program must "pet" regularly. If the program ever freezes for 60 seconds, the watchdog restarts the chip automatically. The socket also records <b>why</b> it last started (power, restart, watchdog, brownout, program fault) and counts its restarts, so a future fault can be diagnosed.</p>
+
+<!-- ============================================================ 14 -->
+<h1>14. Wi-Fi, Bluetooth and talking to the socket</h1>
+
+<h2>14.1 Joining a network</h2>
+<p>The socket remembers up to <b>8 Wi-Fi networks</b> (home, school, a friend's), newest first. When it is not connected, it scans and joins the strongest one it knows. It supports normal home security (WPA2 and the newer WPA3) and, for networks that also ask for a username (like eduroam), the enterprise methods PEAP and TTLS. If it can find none for a minute, it opens <b>setup</b>.</p>
+<h3>Four ways to set it up</h3>
+<ul>
+  <li><b>Bluetooth from the phone app</b>: pick the network, type the password.</li>
+  <li><b>WPS</b>: press the socket's button 3 times, then the router's WPS button.</li>
+  <li><b>Its own setup network</b> "SmartSocket-setup-xxxxxx": joining it opens a setup page automatically (a "captive portal", the same trick hotel Wi-Fi uses).</li>
+  <li><b>USB cable</b> from a laptop, typing one line.</li>
+</ul>
+
+<h2>14.2 Finding the socket: its own name on the network</h2>
+<p>Every device on Wi-Fi gets a number address (for example 192.168.1.31), which can change. The socket also announces a <b>name</b> using <b>mDNS</b>: <code>smartsocket-157698.local</code>, where the six characters come from its unique hardware address. Several sockets can share one network, each with its own name.</p>
+
+<h2>14.3 How apps talk to it: a small web API</h2>
+<p>The socket runs a tiny <b>web server</b>. Apps send short web requests, exactly like a browser opening a page, and the socket answers in <b>JSON</b> (a simple text format of names and values). For example:</p>
+<span class="eq">http://smartsocket-157698.local/api/battery?level=79      ← phone reports 79 %
+http://smartsocket-157698.local/api/status               ← everything the app shows
+http://smartsocket-157698.local/api/config?upper=80&lower=40</span>
+<p>Because it is plain web requests, anything that can open a web address can report a battery level: the Android app, an iPhone Shortcut automation, or a laptop.</p>
+
+<h2>14.4 Bluetooth Low Energy</h2>
+<p><b>Bluetooth Low Energy (BLE)</b> is the low-power form of Bluetooth used by fitness bands and smart devices. Data is organised in <b>characteristics</b>: named slots that can be read, written, or that send updates ("notify"). The socket offers a <b>command</b> characteristic (an app writes a command line such as <code>full</code> or <code>config mode=off</code>) and a <b>reply</b> characteristic (the socket sends the answer back in small pieces). The same commands work over the USB cable.</p>
+
+<h2>14.5 Why Bluetooth was essential: school networks</h2>
+<figure>
+<svg viewBox="0 0 640 205" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="11">
+  <rect x="250" y="20" width="140" height="40" fill="none" stroke="#000"/><text x="320" y="45" text-anchor="middle">school Wi-Fi</text>
+  <rect x="60" y="120" width="110" height="40" fill="none" stroke="#000"/><text x="115" y="145" text-anchor="middle">laptop / tablet</text>
+  <rect x="470" y="120" width="110" height="40" fill="none" stroke="#000"/><text x="525" y="145" text-anchor="middle">smart socket</text>
+  <line x1="115" y1="120" x2="290" y2="60" stroke="#000"/><line x1="525" y1="120" x2="350" y2="60" stroke="#000"/>
+  <line x1="170" y1="140" x2="470" y2="140" stroke="#000" stroke-dasharray="3,3"/><text x="320" y="132" text-anchor="middle">Wi-Fi path between them BLOCKED ("client isolation")</text>
+  <path d="M115,160 C200,190 440,190 525,160" fill="none" stroke="#000" stroke-width="2"/><text x="320" y="200" text-anchor="middle">direct Bluetooth link works anywhere</text>
+</svg>
+<figcaption>Figure 14.1. School and hotel networks let each device reach the internet but not each other, so Wi-Fi control fails there. Bluetooth goes direct.</figcaption>
+</figure>
+<p>The school network (JUNIA_STUDENTS) uses <b>client isolation</b>: devices can reach the internet but not each other. The socket joined it fine (address 10.222.1.60) but the laptop could not reach it. Bluetooth (and USB) were therefore added to both apps, which try Wi-Fi first, then USB, then Bluetooth. A related problem: the school network answered the app's requests itself with a login-page redirect (HTTP code 307), which the app at first showed as "error 307". Both apps now recognise that any answer that is not the socket's JSON came from the network, and move on to Bluetooth.</p>
+<p>The socket allows 3 Bluetooth connections at once. Firmware 1.8 drops the oldest connection if all three fill up, so the socket always stays findable, after a lab session in which stale connections made it invisible.</p>
+
+<!-- ============================================================ 15 -->
+<h1>15. Updating the program without a cable</h1>
+<p>Over-the-air (<b>OTA</b>) updating means sending a new program version wirelessly, so the closed case never needs opening.</p>
+<figure>
+<svg viewBox="0 0 640 170" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="11">
+  <rect x="40" y="40" width="560" height="60" fill="none" stroke="#000" stroke-width="1.5"/><text x="320" y="30" text-anchor="middle" font-weight="700">the chip's 4 MB flash storage</text>
+  <rect x="40" y="40" width="70" height="60" fill="#eee" stroke="#000"/><text x="75" y="75" text-anchor="middle" font-size="9">boot</text>
+  <rect x="110" y="40" width="210" height="60" fill="#ccc" stroke="#000"/><text x="215" y="66" text-anchor="middle">slot A</text><text x="215" y="82" text-anchor="middle" font-size="10">running program</text>
+  <rect x="320" y="40" width="210" height="60" fill="#fff" stroke="#000"/><text x="425" y="66" text-anchor="middle">slot B</text><text x="425" y="82" text-anchor="middle" font-size="10">new version written here</text>
+  <rect x="530" y="40" width="70" height="60" fill="#eee" stroke="#000"/><text x="565" y="75" text-anchor="middle" font-size="9">settings</text>
+  <text x="320" y="125" text-anchor="middle">1. new program arrives in pieces → written into the unused slot</text>
+  <text x="320" y="142" text-anchor="middle">2. checksum (MD5) verified   3. only then: "boot from B next time" → restart</text>
+  <text x="320" y="159" text-anchor="middle">a cut-off or corrupted upload never touches slot A, so the old program keeps running</text>
+</svg>
+<figcaption>Figure 15.1. Two program slots make updates safe.</figcaption>
+</figure>
+<p>The flash memory holds <b>two program slots</b>. A new version is written into the slot that is <b>not</b> running, then checked against an <b>MD5 checksum</b> (a fingerprint of the file computed by the app before sending). Only if it matches does the chip switch to the new slot and restart. If the transfer is interrupted, the old program carries on untouched.</p>
+<table>
+<tr><th>Route</th><th>When</th><th>Time for 1.5 MB</th></tr>
+<tr><td>Wi-Fi</td><td>Home network</td><td>~30 s</td></tr>
+<tr><td>Bluetooth</td><td>Anywhere nearby, including school</td><td>35 s (after optimisation)</td></tr>
+<tr><td>USB cable</td><td>Last resort, lid off</td><td>~20 s</td></tr>
+</table>
+<p><b>The Bluetooth speed-up.</b> The first Bluetooth upload took 14½ minutes: each 244-byte piece waited for a reply before the next was sent. Changing to sending 15 pieces without waiting and only the 16th with a reply (Bluetooth keeps them in order), plus asking Windows for short connection intervals, cut it to <b>35 seconds</b>, 25 times faster, tested on the real socket.</p>
+
+<!-- ============================================================ 16 -->
+<h1>16. The phone app and the laptop app</h1>
+<h2>16.1 The Android app</h2>
+<p>Written in plain Java and built without the usual heavy tools. It finds sockets on Wi-Fi and Bluetooth, shows each socket's state, and offers every control. Its most important part is the <b>background reporter</b>: a small service that sends the phone's battery level to the chosen socket whenever it changes and every minute, with a quiet notification so Android does not stop it. It can also find out by itself which socket the phone has just been plugged into. Program updates can be loaded from the phone too.</p>
+<h2>16.2 The Windows app: a remote control</h2>
+<figure><img src="img/app-windows.jpg" alt="windows app" style="max-height:95mm"><figcaption>Figure 16.1. The Windows remote control connected to the real board.</figcaption></figure>
+<p>All sockets in one list with live state; tabs for <b>Charging</b> (limits, modes, 100 % once, current), <b>Timer and hours</b>, <b>History</b> and <b>Socket</b> (name, PIN, brightness, find me, program upload). It sits in the notification area and can show a message when charging starts or stops. It talks Wi-Fi, USB or Bluetooth.</p>
+<div class="why"><b>Why "remote control" and not "laptop charger"?</b> The socket is 5 V only, so it cannot charge a laptop. The laptop app's value is controlling the socket from a computer, and loading updates.</div>
+
+<!-- ============================================================ 17 -->
+<h1>17. Problems met and how they were solved</h1>
+<p>Real projects are mostly problem-solving. These are the most useful lessons, in the order they happened.</p>
+<table>
+<tr><th>Problem</th><th>Cause found</th><th>Fix</th></tr>
+<tr><td>Bluetooth setup said "Done" with no address and lost the Wi-Fi details</td><td>The join check used a "connected" reading from <b>before</b> leaving the old network</td><td>A join only counts once the socket is on the requested network with an address</td></tr>
+<tr><td>Wrong-PIN upload still restarted the socket</td><td>Handler restarted regardless</td><td>Refuses with code 401 and carries on</td></tr>
+<tr><td>Laptop could not reach the socket at school</td><td>Client isolation on the school Wi-Fi</td><td>USB and Bluetooth control in both apps</td></tr>
+<tr><td>Tablet charged slowly ("slow charger")</td><td>(1) the laptop charger first advertised only basic current; (2) data wires not joined, so the tablet used 0.5 A</td><td>3 A charger reading confirmed; white and green twisted together → 1 A into the battery</td></tr>
+<tr><td>New battery limit only applied after the next 1 % change</td><td>Limits were only re-checked when a report arrived</td><td>Re-check immediately when limits change; phone reports every minute too</td></tr>
+<tr><td>No charging in the lab although the light looked "on"; 0 V at J2</td><td>Limits had been set to 60/55 %; the socket saved "paused" and, with reports blocked at school, never resumed</td><td>Measured D10 = 0 V, read the socket's status over Bluetooth, found the cause; firmware 1.7.4/1.8 starts "allowed" after power-up</td></tr>
+<tr><td>Socket invisible to every device over Bluetooth</td><td>All 3 Bluetooth connection slots held by stale links</td><td>Firmware 1.8 keeps one slot free and restarts advertising</td></tr>
+<tr><td>"Error 307" in the app at school</td><td>The school network answered with its login-page redirect</td><td>Non-socket answers treated as "Wi-Fi unreachable" → Bluetooth</td></tr>
+<tr><td>Bluetooth update took 14½ min</td><td>Waiting for a reply after every piece</td><td>Batched writes → 35 s</td></tr>
+<tr><td>Case would not have fitted</td><td>The case was drawn as a <b>mirror image</b> of the board (a coordinate flipped)</td><td>Caught by building a 3D view with the real board inside, before printing; coordinates fixed</td></tr>
+</table>
+<div class="why"><b>The general lesson.</b> Every fault was solved the same way: measure instead of guessing (meter readings, the socket's own status report, the tablet's battery log), narrow the problem down to one block, fix the cause rather than the symptom, then test again on the real hardware.</div>
+
+<!-- ============================================================ 18 -->
+<h1>18. The case: design, material, printing</h1>
+<h2>18.1 What the case must do</h2>
+<ul>
+  <li>Protect the board and keep fingers and metal objects off the electronics.</li>
+  <li>Let the charger plug fully into J1, let the LED show, and let the BOOT button be pressed.</li>
+  <li>Hold the cable firmly so a pull cannot rip the soldered wires (<b>strain relief</b>).</li>
+  <li>Give access to the XIAO's own USB-C port, for USB control and updates.</li>
+  <li><b>Open again without tools and without unsoldering anything.</b></li>
+</ul>
+<figure><img src="img/case-render.jpg" alt="case render"><figcaption>Figure 18.1. The case generated by the design program: assembled (lid see-through), exploded, the cable slot, and the front opening for the XIAO's USB port.</figcaption></figure>
+
+<h2>18.2 How it was designed</h2>
+<p>The case was not drawn by hand. It was <b>generated by a program</b> (Python with the geometry libraries <i>manifold3d</i> and <i>trimesh</i>) from the board's real dimensions and measurements taken on the finished board: LED tip 9 mm above the board, input module top 4 mm, cable 3.4 mm thick. The program also checks that the board, LED, input socket, cable and USB port do not collide with the case, and that each printed part is "watertight" (a closed solid the printer can make).</p>
+<table>
+<tr><th>Feature</th><th>Dimension</th><th>Reason</th></tr>
+<tr><td>Outside size</td><td>63.8 × 28.0 × 17.2 mm (+5 mm cable collar)</td><td>Board 51.2 × 24 mm plus walls and a 9 mm space for the cable to bend</td></tr>
+<tr><td>Walls</td><td>1.6 mm</td><td>Four printed lines thick: stiff but light</td></tr>
+<tr><td>Lid fit</td><td>0.15 mm gap, 1.2 mm lip</td><td>Friction fit: holds by itself, pulls off by hand; a finger notch helps</td></tr>
+<tr><td>Charger end</td><td>Socket-shaped hole, wall thinned to 0.6 mm</td><td>The plug must reach fully into J1</td></tr>
+<tr><td>Cable end</td><td>Slot open at the top, 3.4 mm, with collar</td><td>The cable drops in from above: <b>no unsoldering to assemble</b></td></tr>
+<tr><td>Lid tongue</td><td>Presses on the cable with 0.2 mm squeeze</td><td>Closes the slot and clamps the cable (strain relief)</td></tr>
+<tr><td>LED hole</td><td>5.05 mm</td><td>The 5 mm LED tip sits in it</td></tr>
+<tr><td>Button</td><td>0.6 mm skin with a post underneath</td><td>Pressing the lid presses the BOOT button; no hole for dust</td></tr>
+<tr><td>Front opening</td><td>13.4 × 8 mm</td><td>Room for a USB-C plug's moulded grip to reach the XIAO's port</td></tr>
+<tr><td>Antenna</td><td>Stuck flat inside the lid</td><td>Radio waves pass through plastic; outside, it could snag</td></tr>
+</table>
+<h3>A mistake caught before printing</h3>
+<p>Building an interactive 3D view with the real board model inside the case revealed that the case had been generated as a <b>mirror image</b> of the board: the LED hole, button and USB opening were on the wrong side. One coordinate direction had been flipped. It was fixed before any plastic was used. This is why "test in software before making it" is worth the effort.</p>
+
+<h2>18.3 Choosing the material: PETG transparent</h2>
+<table>
+<tr><th></th><th>PLA (the common default)</th><th>PETG (chosen)</th></tr>
+<tr><td>Softens at</td><td>~55-60 °C</td><td>~80 °C</td></tr>
+<tr><td>Toughness</td><td>Stiff but brittle</td><td>Tougher, absorbs knocks</td></tr>
+<tr><td>Transparency</td><td>"Transparent" PLA is milky</td><td>Clearer</td></tr>
+<tr><td>Ease of printing</td><td>Easiest</td><td>Slightly harder (strings, sticks hard to smooth sheets)</td></tr>
+</table>
+<div class="why"><b>Why PETG.</b> A charger and a controller sit warm next to a wall socket, and a dashboard or windowsill in summer can pass 60 °C, where PLA softens. PETG also lets the board and the glowing LED show through. One 300 g spool of WINKLE PETG transparent (€11.92 on Amazon.fr, delivered free next day) printed both projects' cases with plenty left over.</div>
+
+<h2>18.4 Printing</h2>
+<p>The parts were printed on the lab's <b>Prusa CORE One</b> (an enclosed, fast 3D printer). The design files (STL) were turned into printer instructions (G-code) with PrusaSlicer, using Prusa's own CORE One and PETG settings:</p>
+<ul>
+  <li>0.4 mm nozzle, 0.20 mm layers, nozzle 240 °C, bed 85 °C, enclosure warmed to 35 °C;</li>
+  <li><b>100 % infill</b> (solid inside), which makes clear plastic as transparent as possible and the walls strong;</li>
+  <li>both projects' five parts on one plate: <b>2 h 13 min, 79 g</b>.</li>
+</ul>
+<p>Two practical lessons. PETG grips a smooth printing sheet very strongly, so the parts were left to cool completely before removal, and the sheet was flexed rather than prying the parts. And clear plastic is almost invisible on a dark sheet during the first layer, so progress was confirmed by watching the spool turn and by shining a torch at a low angle.</p>
+<figure><img src="img/cases-final.jpg" alt="finished cases" style="max-height:120mm"><figcaption>Figure 18.2. The printed cases. Bottom: the smart socket closed, its light showing through the lid. Top: the lock-in amplifier's case (a separate document covers it).</figcaption></figure>
+
+<!-- ============================================================ 19 -->
+<h1>19. Safety, limits and what version 2 would add</h1>
+<h2>19.1 Safety</h2>
+<ul>
+  <li>Nothing exceeds 5 V; the mains side stays inside the commercial charger, which carries its own certification.</li>
+  <li>The socket can never ask the charger for more than 5 V (no PD chip, CC lines separate).</li>
+  <li>The switch is off by default (R1, R2) and the controller restarts itself if it freezes.</li>
+  <li>A heat cut-out pauses charging at 75 °C.</li>
+  <li>The 3 A path uses wide copper and a low-resistance switch; it stayed cool at 3 A.</li>
+</ul>
+<h2>19.2 Known limits</h2>
+<ul>
+  <li>The PIN travels unencrypted on the home Wi-Fi: it keeps out housemates, not a determined attacker.</li>
+  <li>If the phone stops reporting (app closed, network blocked), the socket cannot know the battery level. An optional safety setting resumes charging after a chosen number of hours, and after any power-up it charges until the first report.</li>
+  <li>It cannot measure the actual charging power; that would need a current-sense chip.</li>
+  <li>The data-wire joint (chapter 6) must stay intact for full speed on BC1.2-checking devices.</li>
+</ul>
+<h2>19.3 Version 2 ideas</h2>
+<ul>
+  <li>USB Power Delivery pass-through with a PD controller: laptops and fast charging, with 20 V-rated parts.</li>
+  <li>A current-sense chip to measure the energy delivered to each device.</li>
+  <li>A proper output socket instead of the fixed cable.</li>
+  <li>A soldered-in data-wire bridge on the board, so the BC1.2 signal cannot come apart.</li>
+  <li>Encrypted communication between the app and the socket.</li>
+</ul>
+
+<!-- ============================================================ 20 -->
+<h1>20. Glossary</h1>
+<table class="small">
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>Ampere (A)</td><td>Unit of current: how much charge flows per second.</td></tr>
+<tr><td>Analog input</td><td>A microcontroller pin that measures a voltage and turns it into a number.</td></tr>
+<tr><td>API</td><td>The set of requests a program accepts; here, web addresses like /api/status.</td></tr>
+<tr><td>BC1.2</td><td>USB Battery Charging standard; a wall charger shorts D+ to D− to say "I am a charger".</td></tr>
+<tr><td>BLE</td><td>Bluetooth Low Energy, the low-power Bluetooth used by smart devices.</td></tr>
+<tr><td>Breadboard</td><td>Plastic board of spring contacts for building circuits without soldering.</td></tr>
+<tr><td>Brownout</td><td>The supply voltage sagging so low that a chip restarts.</td></tr>
+<tr><td>CC (Configuration Channel)</td><td>The USB-C wire that detects attachment, orientation and allowed current.</td></tr>
+<tr><td>Client isolation</td><td>A network setting that stops devices on the same Wi-Fi talking to each other.</td></tr>
+<tr><td>Debounce</td><td>Waiting briefly for a signal to stay steady before believing it.</td></tr>
+<tr><td>Diode / Schottky diode</td><td>One-way valve for current; a Schottky wastes less voltage.</td></tr>
+<tr><td>DRC / ERC</td><td>Design rule check / electrical rules check: KiCad's automatic error checks.</td></tr>
+<tr><td>Firmware</td><td>The program stored permanently in a device.</td></tr>
+<tr><td>Flash memory</td><td>Storage that keeps its contents without power.</td></tr>
+<tr><td>Footprint</td><td>The pattern of pads and holes a part needs on a PCB.</td></tr>
+<tr><td>Gerber files</td><td>The standard files sent to a board maker to manufacture a PCB.</td></tr>
+<tr><td>GND (ground)</td><td>The 0 V reference point of a circuit.</td></tr>
+<tr><td>GPIO</td><td>General-purpose input/output pin on a microcontroller.</td></tr>
+<tr><td>HASL</td><td>Hot-air solder levelling: a PCB finish that coats pads with solder.</td></tr>
+<tr><td>High-side switch</td><td>A switch placed in the positive supply line of a load.</td></tr>
+<tr><td>Hysteresis</td><td>Using two thresholds so a system does not flicker around one value.</td></tr>
+<tr><td>Infill</td><td>How solid the inside of a 3D-printed part is.</td></tr>
+<tr><td>JSON</td><td>A simple text format of names and values used by web APIs.</td></tr>
+<tr><td>MD5 checksum</td><td>A short fingerprint of a file used to check it arrived intact.</td></tr>
+<tr><td>mDNS</td><td>Lets a device announce a name like smartsocket-157698.local on the local network.</td></tr>
+<tr><td>Microcontroller</td><td>A complete small computer on one chip.</td></tr>
+<tr><td>MOSFET (N- / P-channel)</td><td>Voltage-controlled transistor switch; P-channel is used on the positive side.</td></tr>
+<tr><td>OTA</td><td>Over-the-air: updating a program wirelessly.</td></tr>
+<tr><td>Ohm (Ω), Ohm's law</td><td>Unit of resistance; V = I × R.</td></tr>
+<tr><td>PCB</td><td>Printed circuit board.</td></tr>
+<tr><td>PETG / PLA</td><td>3D-printing plastics; PETG is tougher and more heat-resistant.</td></tr>
+<tr><td>Pull-up / pull-down resistor</td><td>Holds a signal high or low when nothing else drives it.</td></tr>
+<tr><td>PWM</td><td>Switching rapidly on and off to dim a light or control power.</td></tr>
+<tr><td>R<sub>DS(on)</sub></td><td>A MOSFET's resistance when switched on.</td></tr>
+<tr><td>Rp / Rd</td><td>USB-C resistors: Rp in the charger (sets the current offer), Rd (5.1 kΩ) in the device.</td></tr>
+<tr><td>Silkscreen / solder mask</td><td>White printed labels / green insulating varnish on a PCB.</td></tr>
+<tr><td>Sink / source</td><td>USB-C terms: the device taking power / the device giving power.</td></tr>
+<tr><td>Slicer, G-code, STL</td><td>Software that turns a 3D model (STL) into printer instructions (G-code).</td></tr>
+<tr><td>Strain relief</td><td>Clamping a cable so pulling it does not stress the solder joints.</td></tr>
+<tr><td>USB Power Delivery (PD)</td><td>Digital negotiation over CC for voltages above 5 V.</td></tr>
+<tr><td>VBUS</td><td>The USB power wire.</td></tr>
+<tr><td>Via</td><td>A small plated hole joining copper on two PCB layers.</td></tr>
+<tr><td>Volt (V)</td><td>Unit of voltage: electrical pressure.</td></tr>
+<tr><td>Voltage divider</td><td>Two resistors splitting a voltage in a fixed ratio.</td></tr>
+<tr><td>Watchdog</td><td>A timer that restarts a frozen program.</td></tr>
+<tr><td>Watt (W)</td><td>Unit of power: volts × amperes.</td></tr>
+</table>
+
+<!-- ============================================================ 21 -->
+<h1>21. Sources</h1>
+<p>Project records: the design document (<code>smart-socket/DESIGN.md</code>), build guide (<code>smart-socket/BUILD-GUIDE.md</code>), firmware source (<code>firmware/smart_socket/smart_socket.ino</code>, version 1.8), board files (<code>smart-socket/kicad/</code>), case generator (<code>smart-socket/case/make_case_stl.py</code>), and the measurements recorded during the build sessions of 27 October to 4 November 2026.</p>
+<p>External references consulted for the technical background:</p>
+<ol class="src">
+<li>Battery University, BU-808 "How to Prolong Lithium-based Batteries" (cycle life versus charge voltage), as summarised in: Gigazine, "How to make your lithium-ion battery last longer", https://gigazine.net/gsc_news/en/20260126-how-to-prolong-lithium-based-batteries ; Android Authority, https://www.androidauthority.com/lithium-ion-battery-tips-882395/</li>
+<li>USB Type-C termination resistors and current advertisement: Infineon, "Termination resistors required for the USB Type-C connector", https://community.infineon.com/t5/Knowledge-Base-Articles/Termination-Resistors-Required-for-the-USB-Type-C-Connector/ta-p/253544 ; Applied EE, "USB Power Fundamentals", https://applied-ee.github.io/embedded/docs/power-battery/usb-power-and-pmics/usb-power-fundamentals/ ; Chromium OS, "Cable and adapter tips and tricks", https://chromium.org/chromium-os/developer-library/reference/hardware/cable-and-adapter-tips-and-tricks ; Texas Instruments TPS65994AE datasheet (CC detection thresholds).</li>
+<li>USB Battery Charging 1.2: Microchip, "Battery Charging with USB", https://developerhelp.microchip.com/xwiki/bin/view/applications/usb/power-delivery/battery-charging/ ; Texas Instruments TPS2546-Q1 datasheet (D+/D− short ≤ 200 Ω), https://www.ti.com/document-viewer/TPS2546-Q1/datasheet/detailed_description ; Granite River Labs, "USB Battery Charging 1.2 testing introduction", https://www.graniteriverlabs.com/en-us/technical-blog/usb-battery-charging-1-2-testing-introduction</li>
+<li>Seeed Studio, "Getting Started with Seeed Studio XIAO ESP32C3" (5V pin diode requirement, specifications), https://wiki.seeedstudio.com/XIAO_ESP32C3_Getting_Started/</li>
+<li>Espressif, ESP32-C3 datasheet (RISC-V 160 MHz, 400 KB SRAM, Wi-Fi 802.11 b/g/n, Bluetooth LE 5, temperature sensor, SAR ADC), https://documentation.espressif.com/api/resource/doc/file/aYwvqd1B/FILE/esp32-c3_datasheet_en.pdf</li>
+<li>Espressif, ESP-IDF "Over The Air Updates (OTA)" (two app slots, OTA data partition, rollback), https://docs.espressif.com/projects/esp-idf/en/v5.4/esp32/api-reference/system/ota.html</li>
+<li>High-side P-channel MOSFET switching: Analog Devices, "Driving a High-Side MOSFET Input Switch Using Active Low Output", https://www.analog.com/en/resources/analog-dialogue/articles/driving-a-high-side-mosfet.html ; DigiKey, "High-Side MOSFET Input Switch Options for System Power Cycling", https://www.digikey.com/en/articles/high-side-mosfet-input-switch-options ; NXP, "Load Switch Basics".</li>
+<li>Schottky diodes and the 1N5817: Wikipedia, "Schottky diode", https://en.wikipedia.org/wiki/Schottky_diode ; Components101, "1N5817 Schottky Diode", https://components101.com/diodes/1n5817-schottky-diode</li>
+<li>PETG versus PLA: 3D Hubs, "3D printing with PLA vs. PETG", https://3dhubs.com/knowledge-base/3d-printing-with-pla-vs-petg-whats-the-difference/ ; Snapmaker, "PETG vs. PLA", https://www.snapmaker.com/blog/petg-vs-pla/ ; JLC3DP, "About PETG Filament", https://jlc3dp.com/blog/about-petg-filament</li>
+</ol>
+<p class="small">Note on figures: values quoted from web sources are typical figures for explanation; the design itself was checked against the USB Type-C specification's voltage windows and the parts' datasheets.</p>
+
+</body>
+</html>

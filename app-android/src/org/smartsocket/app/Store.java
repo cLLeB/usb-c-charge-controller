@@ -97,7 +97,8 @@ final class Store {
 
     void setAutoPick(boolean on) { prefs.edit().putBoolean("auto_pick", on).apply(); }
 
-    boolean reporting() { return prefs.getBoolean("reporting", false); }
+    /** On by default (with auto-pick): a fresh install reports this device's battery without any setting. */
+    boolean reporting() { return prefs.getBoolean("reporting", autoPick()); }
 
     void setReporting(boolean on) { prefs.edit().putBoolean("reporting", on).apply(); }
 }

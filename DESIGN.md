@@ -1,7 +1,7 @@
 # Smart charge switch (the "smart socket"), version 1 (program 1.5)
 
 Written 2026-10-09, updated 2026-11-02. Status: board rev 0.2 made by PCBWay, then assembled,
-soldered and tested on 2026-10-28 (photos in `docs/photos/`). The firmware is now at version 1.8;
+soldered and tested on 2026-10-28 (photos in `docs/photos/`). The firmware is now at version 1.9 and the Android app at 1.9;
 version 1.5 passed 26 checks over Wi-Fi on the real XIAO and the Android app is tested on a real
 tablet against it. Build steps: `BUILD-GUIDE.md`.
 
@@ -182,6 +182,31 @@ New programs load wirelessly, three ways, so USB is only a last resort:
 
 Program 1.6 had no Bluetooth updates, so 1.7 has to be loaded once by another way (USB or Wi-Fi).
 The compiled file is `firmware/smart_socket/build/smart_socket.ino.bin`.
+
+## Program 1.9 and app 1.9: connecting without surprises (2026-11-16)
+
+Found after a school afternoon where a newly installed phone showed the socket over Bluetooth but no
+battery level, and the socket was never seen over an iPhone hotspot.
+
+- **Several devices on Bluetooth at once** (program 1.9). Before, the socket had one command slot for
+  all Bluetooth connections and sent every answer to every connected device, cut into pieces sized for
+  whichever device had connected last. With a tablet and a laptop both on Bluetooth, the laptop saw 35
+  answers meant for the tablet in one minute (`tools/test_ble_shared.py`). Now each command is queued
+  with the connection that sent it, answered to that connection only, in pieces sized to its own MTU,
+  and the PIN is remembered per connection. Same test on 1.9: 135 of 135 answered whole, none leaked.
+  `tools/test_features.py`: 25 of 25 on 1.9.
+- **Battery reports on a new install** (app 1.8). Reporting was off until a switch was found, and the
+  app only looked for "its" socket in the first 30 s after plugging in. Now reporting is on from the
+  start, a device that is already charging finds its socket when the app opens, and opening the socket's
+  page on the charging device links it. A socket page with no battery level says why.
+- **App 1.9**: the Bluetooth note on the main screen fixes the problem it names when tapped (asks for the
+  permission, opens the app's settings if it was refused for good, turns Bluetooth on, or opens Location
+  on Android 11 and older, which needs it to find Bluetooth devices; Android 8 is now checked too). The
+  app asks once to be left out of battery saving so background reports keep going. The main screen says
+  no pairing is needed in the phone's Bluetooth settings (pairing there fails and changes nothing). The
+  Wi-Fi list explains the 2.4 GHz limit and the iPhone hotspot's "Maximise Compatibility".
+- A phone hotspot works like any other network, but the socket has to be given it once (Wi-Fi networks
+  page, over Bluetooth). Phones and laptops joining the hotspot do not bring the socket with them.
 
 ## The cable to buy, and the case
 

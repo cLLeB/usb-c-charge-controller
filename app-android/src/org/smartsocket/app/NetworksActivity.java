@@ -60,7 +60,10 @@ public class NetworksActivity extends Activity {
         r.addView(ui.button("Add a network", true, v -> add("", false)), ui.weight());
         c.addView(r, ui.wide());
         c.addView(ui.text("Adding a network makes the socket join it now. Over Wi-Fi this device loses it for a moment "
-                + "while it switches; over Bluetooth it stays in touch.", 13, ui.dim, false));
+                + "while it switches; over Bluetooth it stays in touch.\n"
+                + "Network not in the list? The socket only uses 2.4 GHz Wi-Fi. On an iPhone hotspot turn on "
+                + "“Maximise Compatibility”; on an Android hotspot choose the 2.4 GHz band. Hidden networks: “Add a network” and type the name.",
+                13, ui.dim, false));
     }
 
     @Override

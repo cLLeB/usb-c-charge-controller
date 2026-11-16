@@ -16,3 +16,4 @@ upload_certificate.pem
 *.aab
 app-android/bundle/
 app-android/bundletool.jar
+play/

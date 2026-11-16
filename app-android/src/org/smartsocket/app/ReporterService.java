@@ -67,6 +67,12 @@ public class ReporterService extends Service {
 
     static void stop(Context c) { c.stopService(new Intent(c, ReporterService.class)); }
 
+    /** Is this device on a charger right now? */
+    static boolean pluggedIn(Context c) {
+        Intent b = c.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        return b != null && b.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -98,6 +104,9 @@ public class ReporterService extends Service {
         f.addAction(Intent.ACTION_POWER_CONNECTED);
         registerReceiver(receiver, f);
         Api.MAIN.postDelayed(watch, 5000);
+        // Already plugged in when the service starts (app just installed or opened while charging):
+        // look for the socket now instead of waiting for the next plug-in.
+        if (store.autoPick() && pluggedIn(this)) Api.MAIN.postDelayed(this::pickSocket, 3000);
     }
 
     @Override
@@ -137,7 +146,10 @@ public class ReporterService extends Service {
                 if (!r.ok() || r.json == null) return;
                 JSONObject st = r.json;
                 long charging = st.optLong("charge_s", -1);
-                if (st.optBoolean("phone") && charging >= 0 && charging < 30 && !s.id.equals(store.reportTarget())) {
+                boolean justStarted = charging >= 0 && charging < 30;
+                // No socket chosen yet and this device is on a charger: a socket with a device on it is the one.
+                boolean noneYet = store.reportTarget().isEmpty() && pluggedIn(this);
+                if (st.optBoolean("phone") && (justStarted || noneYet) && !s.id.equals(store.reportTarget())) {
                     store.setReportTarget(s.id);
                     report();
                     event(s.label() + ": found", "This device is plugged into " + s.label() + ". Its battery level is sent there now.");

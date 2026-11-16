@@ -60,13 +60,16 @@
 #include <esp_task_wdt.h>
 #include <esp_wifi.h>
 #include <esp_wps.h>
+#include <host/ble_gatt.h>
+#include <host/ble_hs_mbuf.h>
+#include <freertos/semphr.h>
 #include <time.h>
 
 #include <functional>
 
 #include "index_html.h"
 
-#define FW_VERSION "1.8"
+#define FW_VERSION "1.9"
 
 // Password for loading a new program over Wi-Fi from the Arduino IDE. It lives in secrets.h, which is
 // not committed: copy secrets.example.h to secrets.h and choose your own before the first upload.
@@ -826,10 +829,59 @@ bool bleReady = false, bleOn = false;
 BLEServer *bleServer = nullptr;
 BLECharacteristic *chInfo, *chNets, *chSetup, *chResult, *chCmd, *chReply, *chOta;
 String bleSetupError = "";
-bool bleAuthed = false;     // this connection gave the PIN (or none is set)
 uint16_t bleConnId = 0;
-String bleCmdPending;       // a command written to CMD, run in the main loop
-bool bleCmdWaiting = false;
+// Program 1.9: several phones and laptops can talk at once. Each command is queued with the connection
+// that wrote it, and its answer goes back to that connection only, in pieces sized to that connection's
+// MTU. (Before, one shared slot meant a second device's command could replace the first one's, and the
+// answer went to everyone in pieces sized for whoever connected last.) The PIN is also per connection.
+const int BLE_QUEUE = 8;
+struct BleCmd {
+  uint16_t conn;
+  String line;
+};
+BleCmd bleQueue[BLE_QUEUE];
+int bleQHead = 0, bleQCount = 0;
+uint16_t bleAuthedConns[4];
+int bleAuthedCount = 0;
+SemaphoreHandle_t bleLock = nullptr;
+
+void bleLockTake() { if (bleLock) xSemaphoreTake(bleLock, portMAX_DELAY); }
+void bleLockGive() { if (bleLock) xSemaphoreGive(bleLock); }
+
+bool bleIsAuthed(uint16_t conn) {
+  bleLockTake();
+  bool a = false;
+  for (int i = 0; i < bleAuthedCount; i++)
+    if (bleAuthedConns[i] == conn) a = true;
+  bleLockGive();
+  return a;
+}
+
+void bleSetAuthed(uint16_t conn, bool on) {
+  bleLockTake();
+  int k = 0;
+  for (int i = 0; i < bleAuthedCount; i++)
+    if (bleAuthedConns[i] != conn) bleAuthedConns[k++] = bleAuthedConns[i];
+  bleAuthedCount = k;
+  if (on && bleAuthedCount < 4) bleAuthedConns[bleAuthedCount++] = conn;
+  bleLockGive();
+}
+
+// Forget everything about a connection that has gone (its PIN and its queued commands).
+void bleForget(uint16_t conn) {
+  bleSetAuthed(conn, false);
+  bleLockTake();
+  BleCmd keep[BLE_QUEUE];
+  int k = 0;
+  for (int i = 0; i < bleQCount; i++) {
+    BleCmd &c = bleQueue[(bleQHead + i) % BLE_QUEUE];
+    if (c.conn != conn) keep[k++] = c;
+  }
+  for (int i = 0; i < k; i++) bleQueue[i] = keep[i];
+  bleQHead = 0;
+  bleQCount = k;
+  bleLockGive();
+}
 
 String runCommand(String line, bool trusted, bool &authed);
 
@@ -849,8 +901,8 @@ int bleCount = 0;
 portMUX_TYPE bleMux = portMUX_INITIALIZER_UNLOCKED;
 
 class ServerCallbacks : public BLEServerCallbacks {
-  void onConnect(BLEServer *srv) override {
-    bleConnId = srv->getConnId();
+  void onConnect(BLEServer *srv, ble_gap_conn_desc *desc) override {
+    bleConnId = desc->conn_handle;
     portENTER_CRITICAL(&bleMux);
     if (bleCount < BLE_SLOTS) {
       bleIds[bleCount] = bleConnId;
@@ -858,11 +910,11 @@ class ServerCallbacks : public BLEServerCallbacks {
       bleCount++;
     }
     portEXIT_CRITICAL(&bleMux);
-    bleAuthed = false;
+    bleSetAuthed(bleConnId, false);
     BLEDevice::startAdvertising(); // stay visible to other phones while this one is connected
   }
-  void onDisconnect(BLEServer *srv) override {
-    bleAuthed = false;
+  void onDisconnect(BLEServer *srv, ble_gap_conn_desc *desc) override {
+    bleForget(desc->conn_handle);
     // which connection went is not reported here: rebuild the list from the stack's own
     std::map<uint16_t, conn_status_t> peers = srv->getPeerDevices(false);
     portENTER_CRITICAL(&bleMux);
@@ -891,6 +943,19 @@ class ReadCallbacks : public BLECharacteristicCallbacks {
       c->setValue(j);
     }
   }
+  void onWrite(BLECharacteristic *c, ble_gap_conn_desc *desc) override {
+    if (c == chCmd) {
+      String line = c->getValue();
+      bleLockTake();
+      if (bleQCount < BLE_QUEUE) {
+        bleQueue[(bleQHead + bleQCount) % BLE_QUEUE] = {desc->conn_handle, line};
+        bleQCount++;
+      }
+      bleLockGive();
+      return;
+    }
+    onWrite(c);
+  }
   void onWrite(BLECharacteristic *c) override {
     if (c == chOta) {
       if (!otaActive || otaFailed) return;
@@ -898,11 +963,6 @@ class ReadCallbacks : public BLECharacteristicCallbacks {
       if (otaGot + v.length() > otaSize || Update.write((uint8_t *)v.c_str(), v.length()) != v.length()) otaFailed = true;
       else otaGot += v.length();
       otaLastData = nowMs();
-      return;
-    }
-    if (c == chCmd) {
-      bleCmdPending = c->getValue();
-      bleCmdWaiting = true;
       return;
     }
     if (c != chSetup) return;
@@ -915,6 +975,7 @@ class ReadCallbacks : public BLECharacteristicCallbacks {
 
 void bleStart() {
   if (!bleReady) {
+    bleLock = xSemaphoreCreateMutex();
     BLEDevice::init(("SmartSocket-" + devId).c_str());
     BLEDevice::setMTU(247);
     bleServer = BLEDevice::createServer();
@@ -977,19 +1038,34 @@ void bleKeepFindable() {
 
 void blePass() {
   bleKeepFindable();
-  if (!bleCmdWaiting) return;
-  bleCmdWaiting = false;
-  String reply = runCommand(bleCmdPending, false, bleAuthed) + "\n";
-  int piece = 20;
-  if (bleServer) {
-    int mtu = bleServer->getPeerMTU(bleConnId);
+  for (int n = 0; n < 2; n++) { // at most two commands per pass, so the rest of the loop keeps running
+    BleCmd job;
+    bleLockTake();
+    bool have = bleQCount > 0;
+    if (have) {
+      job = bleQueue[bleQHead];
+      bleQHead = (bleQHead + 1) % BLE_QUEUE;
+      bleQCount--;
+    }
+    bleLockGive();
+    if (!have) return;
+    bool authed = bleIsAuthed(job.conn);
+    bool was = authed;
+    String reply = runCommand(job.line, false, authed) + "\n";
+    if (authed != was) bleSetAuthed(job.conn, authed);
+    int piece = 20;
+    int mtu = bleServer ? bleServer->getPeerMTU(job.conn) : 0;
     if (mtu > 23) piece = mtu - 3;
-  }
-  for (int i = 0; i < (int)reply.length(); i += piece) {
-    String part = reply.substring(i, min((int)reply.length(), i + piece));
-    chReply->setValue((uint8_t *)part.c_str(), part.length());
-    chReply->notify();
-    delay(8); // let the stack send it before the next piece
+    for (int i = 0; i < (int)reply.length(); i += piece) {
+      int len = min((int)reply.length(), i + piece) - i;
+      // to the connection that asked only; retry briefly if the stack is out of buffers
+      for (int tries = 0; tries < 20; tries++) {
+        struct os_mbuf *om = ble_hs_mbuf_from_flat(reply.c_str() + i, len);
+        if (om && ble_gatts_notify_custom(job.conn, chReply->getHandle(), om) == 0) break;
+        delay(5);
+      }
+      delay(4);
+    }
   }
 }
 

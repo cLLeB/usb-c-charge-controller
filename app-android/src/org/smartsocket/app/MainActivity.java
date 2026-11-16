@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
         bleNote = ui.text("", 13, ui.dim, false);
         bleNote.setPadding(0, 0, 0, ui.dp(12));
         bleNote.setVisibility(View.GONE);
-        bleNote.setOnClickListener(v -> askPermissions());
+        bleNote.setOnClickListener(v -> fixBluetooth());
         col.addView(bleNote);
 
         col.addView(ui.button("Set up a new socket", true, v -> startActivity(new Intent(this, SetupActivity.class))), ui.wide());
@@ -69,7 +69,8 @@ public class MainActivity extends Activity {
         r.addView(ui.button("Add by address", false, v -> addByAddress()), ui.weight());
         col.addView(r, ui.wide());
 
-        TextView foot = ui.text("Each socket has its own name and PIN, so several can share one Wi-Fi. "
+        TextView foot = ui.text("No pairing needed: do not add the socket in the phone's Bluetooth settings, this app finds it by itself. "
+                + "Each socket has its own name and PIN, so several can share one Wi-Fi. "
                 + "Tap “Find” on a socket's page to flash its light. Where the Wi-Fi keeps devices apart "
                 + "(schools, hotels), the app reaches sockets nearby over Bluetooth instead.", 13, ui.dim, false);
         foot.setPadding(0, ui.dp(16), 0, 0);
@@ -77,7 +78,10 @@ public class MainActivity extends Activity {
 
         discovery = new Discovery(this, this::onFound);
         askPermissions();
-        if (store.reporting()) ReporterService.start(this);
+        if (store.reporting()) {
+            ReporterService.start(this);
+            askBatteryExemption();
+        }
     }
 
     @Override
@@ -93,8 +97,7 @@ public class MainActivity extends Activity {
     private void startBle() {
         String why = Ble.problem(this);
         if (why != null) {
-            bleNote.setText("Bluetooth: " + why + ". Sockets are reached over Wi-Fi only"
-                    + (Ble.permitted(this) ? "." : ". Tap here to allow it."));
+            bleNote.setText("Bluetooth: " + why + ". Sockets are reached over Wi-Fi only. Tap here to fix it.");
             bleNote.setVisibility(View.VISIBLE);
             return;
         }
@@ -242,12 +245,48 @@ public class MainActivity extends Activity {
         }).setNegativeButton("Cancel", null).show();
     }
 
+    /** Tapping the Bluetooth note: ask for what is missing, or open the right switch. */
+    private void fixBluetooth() {
+        android.bluetooth.BluetoothAdapter a = Ble.adapter(this);
+        if (!Ble.permitted(this)) {
+            if (permAsked && !shouldShowRequestPermissionRationale(Ble.permissions()[0]))
+                // refused for good: only the app's settings page can allow it now
+                startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        android.net.Uri.fromParts("package", getPackageName(), null)));
+            else askPermissions();
+        } else if (a != null && !a.isEnabled()) {
+            try { startActivity(new Intent(android.bluetooth.BluetoothAdapter.ACTION_REQUEST_ENABLE)); }
+            catch (Exception e) { startActivity(new Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)); }
+        } else if (Build.VERSION.SDK_INT < 31 && !Ble.locationOn(this)) {
+            startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+        }
+    }
+
+    /** Battery reports run in the background: ask once to be left out of battery saving, or the phone may stop them. */
+    private void askBatteryExemption() {
+        android.os.PowerManager pm = getSystemService(android.os.PowerManager.class);
+        if (pm == null || pm.isIgnoringBatteryOptimizations(getPackageName())) return;
+        android.content.SharedPreferences sp = getSharedPreferences("once", MODE_PRIVATE);
+        if (sp.getBoolean("battery_exempt_asked", false)) return;
+        sp.edit().putBoolean("battery_exempt_asked", true).apply();
+        try {
+            startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    android.net.Uri.parse("package:" + getPackageName())));
+        } catch (Exception ignored) {
+        }
+    }
+
+    private boolean permAsked;
+
     /** Notifications (battery reports) and Bluetooth (sockets on Wi-Fi that keeps devices apart), in one question. */
     private void askPermissions() {
         List<String> need = new ArrayList<>(Ble.missing(this));
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
             need.add(Manifest.permission.POST_NOTIFICATIONS);
-        if (!need.isEmpty()) requestPermissions(need.toArray(new String[0]), 1);
+        if (!need.isEmpty()) {
+            permAsked = true;
+            requestPermissions(need.toArray(new String[0]), 1);
+        }
     }
 
     @Override
@@ -256,8 +295,8 @@ public class MainActivity extends Activity {
         if (Ble.permitted(this)) startBle();
         else {
             bleNote.setText("Bluetooth is not allowed for this app, so sockets are reached over Wi-Fi only. "
-                    + "To allow it: Settings › Apps › Smart Socket › Permissions › Nearby devices"
-                    + (Build.VERSION.SDK_INT < 31 ? " (Location on this Android version)." : "."));
+                    + "Tap here to allow it (Nearby devices"
+                    + (Build.VERSION.SDK_INT < 31 ? ", Location on this Android version)." : ")."));
             bleNote.setVisibility(View.VISIBLE);
         }
     }

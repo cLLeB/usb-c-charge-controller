@@ -172,6 +172,7 @@ public class DeviceActivity extends Activity {
             store.setReporting(on || store.autoPick());
             if (on) ReporterService.start(this);
             else if (!store.autoPick()) ReporterService.stop(this);
+            if (on) exemptFromBatterySaving();
         });
         autoPick = sw(c, "Find the socket I'm plugged into by myself (any socket)", on -> {
             store.setAutoPick(on);
@@ -325,7 +326,19 @@ public class DeviceActivity extends Activity {
         int level = st.optInt("level", -1);
         bar.setProgress(Math.max(level, 0));
         long age = st.optLong("level_age_s", -1);
-        levelText.setText(level < 0 ? "No battery report yet" : level + " % · reported " + ago(age));
+        if (level >= 0) levelText.setText(level + " % · reported " + ago(age));
+        else if (sock.id.equals(store.reportTarget()) && store.reporting())
+            levelText.setText("No battery report yet: this device sends it within a minute");
+        else if (st.optBoolean("phone") && ReporterService.pluggedIn(this) && store.reportTarget().isEmpty()) {
+            // This device is charging and nothing is chosen yet: it is almost certainly plugged into this socket.
+            store.setReportTarget(sock.id);
+            store.setReporting(true);
+            ReporterService.start(this);
+            levelText.setText("No battery report yet: this device now sends it here");
+            ui.toast("This device's battery level is now sent to this socket");
+        } else
+            levelText.setText("No battery report yet. The socket cannot read a battery itself: on the device being charged, "
+                    + "open this app and turn on “Send this device's battery level to this socket” below. Until then it charges with no limit.");
         boost.setText(st.optBoolean("boost") ? "Going to 100 % (tap to stop)" : "Charge to 100 % once");
         ui.style(boost, st.optBoolean("boost"));
         String name = st.optString("name");
@@ -361,6 +374,16 @@ public class DeviceActivity extends Activity {
         reportHere.setChecked(sock.id.equals(store.reportTarget()));
         autoPick.setChecked(store.autoPick() && store.reporting());
         filling = false;
+    }
+
+    private void exemptFromBatterySaving() {
+        android.os.PowerManager pm = getSystemService(android.os.PowerManager.class);
+        if (pm == null || pm.isIgnoringBatteryOptimizations(getPackageName())) return;
+        try {
+            startActivity(new android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    android.net.Uri.parse("package:" + getPackageName())));
+        } catch (Exception ignored) {
+        }
     }
 
     static String ago(long s) {
