@@ -104,6 +104,7 @@ public class ReporterService extends Service {
         f.addAction(Intent.ACTION_POWER_CONNECTED);
         registerReceiver(receiver, f);
         Api.MAIN.postDelayed(watch, 5000);
+        Api.MAIN.postDelayed(this::checkTarget, 20000); // a second early look, once the app has found its sockets
         // Already plugged in when the service starts (app just installed or opened while charging):
         // look for the socket now instead of waiting for the next plug-in.
         if (store.autoPick() && pluggedIn(this)) Api.MAIN.postDelayed(this::pickSocket, 3000);
@@ -160,7 +161,12 @@ public class ReporterService extends Service {
 
     private void checkTarget() {
         Store.Socket s = store.get(store.reportTarget());
-        if (s == null) return;
+        if (s == null) {
+            // Nothing chosen yet (a fresh install learns its sockets a little after starting): keep looking
+            // while this device is on a charger.
+            if (store.autoPick() && pluggedIn(this)) pickSocket();
+            return;
+        }
         // Every minute the level goes again, not only when it changes: a socket that restarted (or
         // whose limits just changed) knows where the battery is within a minute.
         if (lastLevel >= 0) {

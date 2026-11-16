@@ -78,10 +78,7 @@ public class MainActivity extends Activity {
 
         discovery = new Discovery(this, this::onFound);
         askPermissions();
-        if (store.reporting()) {
-            ReporterService.start(this);
-            askBatteryExemption();
-        }
+        if (store.reporting()) ReporterService.start(this);
     }
 
     @Override
@@ -91,6 +88,8 @@ public class MainActivity extends Activity {
         startBle();
         rebuild();
         Api.MAIN.post(refresher);
+        // Only once this device reports to a socket (asking earlier would pause the search for sockets behind the dialog).
+        if (store.reporting() && !store.reportTarget().isEmpty()) askBatteryExemption();
     }
 
     /** Looks for sockets over Bluetooth while this screen is open. */
